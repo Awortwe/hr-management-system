@@ -91,3 +91,9 @@ Inertia keeps the project in one Laravel codebase. We get one authentication sys
 9. payroll_items
 
 This order keeps foreign keys straightforward and gives the first application slice the nine domain tables needed before controllers are introduced.
+
+## Step 3 Seed Shape
+
+The demo seeder builds one believable company with five departments, fifteen positions, thirty-six users/employees, three leave types, leave balances for every employee, ten days of attendance per employee, and one finalized payroll with payslip rows.
+
+Factories avoid the factory-explosion bug by not nesting relationship factories inside employee, attendance, leave, or payroll item defaults. The seeder creates each parent record once, then passes existing foreign keys into child factories.

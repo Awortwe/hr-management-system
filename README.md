@@ -9,6 +9,8 @@ PeopleHQ is a browser-based HR management system built in one Laravel codebase w
 - The first Inertia React page replaces the stock Laravel welcome page.
 - MySQL is configured in `.env.example`.
 - The first-pass HR database design is captured in `docs/database-design.md`.
+- Step 2 adds the nine-table HR domain migration and Eloquent models.
+- Step 3 adds user roles, role middleware, factories, and a full demo company seeder.
 
 ## Why Inertia
 
@@ -25,9 +27,18 @@ copy .env.example .env
 php artisan key:generate
 mysql -u root -e "create database if not exists peoplehq character set utf8mb4 collate utf8mb4_unicode_ci"
 php artisan migrate
+php artisan db:seed
 npm run dev
 php artisan serve
 ```
+
+For a clean demo database:
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+The demo admin account is `awortwe.enock@peoplehq.test` and all seeded users use the password `password`.
 
 ## Database Planning
 
