@@ -4,7 +4,7 @@ Step 1 captures the HR database on paper before feature migrations are written. 
 
 ## Stack Decision
 
-PeopleHQ uses Laravel 13, React 19, Inertia.js, Tailwind CSS 4, SQLite for local development, MySQL for production, and Pest for automated tests.
+PeopleHQ uses Laravel 13, React 19, Inertia.js, Tailwind CSS 4, MySQL for development and production data, and Pest for automated tests.
 
 Inertia keeps the project in one Laravel codebase. We get one authentication system, one authorization layer, server-side validation, normal Laravel routes, and React pages without introducing a separate REST API or CORS boundary for Release 1.
 
@@ -20,13 +20,8 @@ Inertia keeps the project in one Laravel codebase. We get one authentication sys
 | leave_balances | Annual entitlement and used days per employee/type/year | Belongs to employee and leave type |
 | leave_requests | Leave dates, reason, status, approver, and decision metadata | Belongs to employee, leave type, and approver |
 | attendance_records | Daily clock-in/out events, status, and worked minutes | Belongs to employee |
-| holidays | Company non-working dates | Used by leave duration calculations |
-| payroll_runs | Monthly payroll batch status and totals | Has payroll items |
-| payroll_items | Employee payroll snapshots for a run | Belongs to payroll run and employee |
-| payroll_components | Earnings, deductions, and employer-only lines | Belongs to payroll item |
-| notifications | In-app user notifications | Belongs to user |
-| audit_logs | Immutable sensitive action history | Belongs to actor user and affected entity |
-| company_settings | Organisation-wide profile, timezone, currency, and work rules | Single active configuration |
+| payrolls | Monthly payroll batch status and totals | Has payroll items |
+| payroll_items | Employee payroll snapshots for a run | Belongs to payroll and employee |
 
 ## Entity Notes
 
@@ -74,13 +69,6 @@ Inertia keeps the project in one Laravel codebase. We get one authentication sys
 - Money uses fixed decimal columns, never floating point.
 - Finalised payroll is read-only except through a controlled correction process.
 
-### settings, notifications, and audit
-
-- company_settings store organisation name, logo path, contact details, currency, timezone, working days, work start/end time, grace period, and break duration.
-- holidays support leave calculations.
-- notifications support leave and payroll events.
-- audit_logs store actor_id, action, auditable_type, auditable_id, old_values, new_values, ip_address, user_agent, and created_at.
-
 ## Integrity Rules
 
 - Use foreign keys for all relationships.
@@ -88,24 +76,18 @@ Inertia keeps the project in one Laravel codebase. We get one authentication sys
 - Use server-side policies for every protected action.
 - Use transactions for leave approval, payroll generation, payroll finalisation, balance adjustment, attendance correction, and sensitive employee status changes.
 - Store uploaded profile photos as files with generated names, not as database blobs.
-- Keep SQLite as the local development database and MySQL as the production target.
+- Use MySQL in development and production so foreign key behavior, indexes, and decimal handling match the target database.
 
 ## First Migration Order
 
-1. users
-2. departments
-3. positions
-4. employees
-5. leave_types
-6. leave_balances
-7. leave_requests
-8. attendance_records
-9. holidays
-10. payroll_runs
-11. payroll_items
-12. payroll_components
-13. notifications
-14. audit_logs
-15. company_settings
+1. departments
+2. positions
+3. employees
+4. leave_types
+5. leave_balances
+6. leave_requests
+7. attendance_records
+8. payrolls
+9. payroll_items
 
-This order keeps foreign keys straightforward and lets later steps add migrations module by module.
+This order keeps foreign keys straightforward and gives the first application slice the nine domain tables needed before controllers are introduced.
