@@ -97,3 +97,9 @@ This order keeps foreign keys straightforward and gives the first application sl
 The demo seeder builds one believable company with five departments, fifteen positions, thirty-six users/employees, three leave types, leave balances for every employee, ten days of attendance per employee, and one finalized payroll with payslip rows.
 
 Factories avoid the factory-explosion bug by not nesting relationship factories inside employee, attendance, leave, or payroll item defaults. The seeder creates each parent record once, then passes existing foreign keys into child factories.
+
+## Step 4 CRUD Pattern
+
+Departments and positions are the first complete CRUD modules. Their controllers validate create and edit requests, use `Rule::unique()->ignore($model)` so unchanged names and codes do not fail during edits, include related totals with `withCount()`, and protect destructive deletes when employees still reference a record.
+
+The Inertia pages import shared TypeScript contracts from `resources/js/types/index.ts`, use the same table, dialog, `useForm`, toast, filter, and pagination patterns, and sit behind the `role:admin,hr` middleware group.

@@ -11,6 +11,7 @@ PeopleHQ is a browser-based HR management system built in one Laravel codebase w
 - The first-pass HR database design is captured in `docs/database-design.md`.
 - Step 2 adds the nine-table HR domain migration and Eloquent models.
 - Step 3 adds user roles, role middleware, factories, and a full demo company seeder.
+- Step 4 adds the reusable CRUD pattern with complete department and position controllers, typed Inertia pages, role-gated navigation, dialogs, forms, filters, counts, and 403 guard coverage.
 
 ## Why Inertia
 

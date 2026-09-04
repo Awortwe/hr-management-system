@@ -2,7 +2,7 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "awortwe/hr-management-system",
     "type": "project",
-    "description": "PeopleHQ HR management system built with Laravel, React, Inertia, Tailwind, SQLite, and Pest.",
+    "description": "PeopleHQ HR management system built with Laravel, React, Inertia, Tailwind, MySQL, and Pest.",
     "keywords": ["laravel", "react", "inertia", "hr", "payroll"],
     "license": "MIT",
     "require": {
