@@ -13,11 +13,11 @@ class CsvExporter
         return response()->streamDownload(function () use ($headers, $query, $mapRow, $chunkSize): void {
             $output = fopen('php://output', 'w');
 
-            fputcsv($output, $headers);
+            fputcsv($output, $headers, ',', '"', '');
 
             $query->chunk($chunkSize, function ($rows) use ($output, $mapRow): void {
                 foreach ($rows as $row) {
-                    fputcsv($output, $mapRow($row));
+                    fputcsv($output, $mapRow($row), ',', '"', '');
                 }
 
                 fflush($output);

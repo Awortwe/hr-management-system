@@ -218,7 +218,7 @@ class EmployeeController extends Controller
         return $request->validate([
             'user_id' => ['nullable', 'integer', Rule::exists('users', 'id'), Rule::unique('employees', 'user_id')->ignore($employee)],
             'department_id' => ['required', 'integer', Rule::exists('departments', 'id')],
-            'position_id' => ['required', 'integer', Rule::exists('positions', 'id')],
+            'position_id' => ['required', 'integer', Rule::exists('positions', 'id')->where('department_id', $request->input('department_id'))],
             'manager_id' => ['nullable', 'integer', Rule::exists('employees', 'id')->where(fn ($query) => $query->where('id', '<>', $employee?->id ?? 0))],
             'employee_number' => ['required', 'string', 'max:50', Rule::unique('employees', 'employee_number')->ignore($employee)],
             'first_name' => ['required', 'string', 'max:255'],

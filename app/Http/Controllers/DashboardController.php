@@ -5,13 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\LeaveRequest;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(): Response
+    public function __invoke(Request $request): Response
     {
+        if (! $request->user()->hasRole('admin', 'hr')) {
+            return Inertia::render('SelfService/Home');
+        }
         $today = today();
         $monthStart = $today->copy()->startOfMonth();
 

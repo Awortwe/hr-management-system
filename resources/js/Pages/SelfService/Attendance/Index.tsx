@@ -1,5 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import AppLayout from '../../../Layouts/AppLayout';
+import SafeAvatar from '../../../Components/Avatar';
 import type { AttendanceRecord, Department, Employee, Position } from '../../../types';
 
 type Props = {
@@ -140,15 +141,7 @@ export default function Index({ employee, todayRecord, recentRecords, workDate, 
 }
 
 function Avatar({ employee }: { employee: Props['employee'] }) {
-    if (employee?.avatar_url) {
-        return <img alt="" className="h-16 w-16 rounded-lg object-cover" src={employee.avatar_url} />;
-    }
-
-    return (
-        <div className="grid h-16 w-16 shrink-0 place-items-center rounded-lg bg-blue-50 text-lg font-semibold text-blue-700">
-            {employee ? initials(employee.full_name) : '--'}
-        </div>
-    );
+    return <SafeAvatar name={employee?.full_name ?? '--'} src={employee?.avatar_url} className="h-16 w-16 text-lg" />;
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
@@ -223,14 +216,6 @@ function formatMinutes(value?: number) {
     return `${hours}h ${minutes}m`;
 }
 
-function initials(name: string) {
-    return name
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part) => part[0]?.toUpperCase())
-        .join('');
-}
 
 function titleCase(value: string) {
     return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());

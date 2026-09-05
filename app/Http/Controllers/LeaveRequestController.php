@@ -7,6 +7,7 @@ use App\Models\LeaveBalance;
 use App\Models\LeaveRequest;
 use App\Models\LeaveType;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -22,6 +23,7 @@ class LeaveRequestController extends Controller
         $filters = $request->only(['status', 'employee']);
 
         $leaveRequests = LeaveRequest::query()
+            ->whereIn('employee_id', $this->visibleEmployees($request)->select('id'))
             ->with([
                 'employee:id,employee_number,first_name,middle_name,last_name,manager_id,department_id,position_id',
                 'employee.department:id,name',
@@ -38,7 +40,7 @@ class LeaveRequestController extends Controller
 
         return Inertia::render('Staff/LeaveRequests/Index', [
             'leaveRequests' => $leaveRequests,
-            'employees' => Employee::query()
+            'employees' => $this->visibleEmployees($request)
                 ->select(['id', 'employee_number', 'first_name', 'middle_name', 'last_name'])
                 ->orderBy('first_name')
                 ->get()
@@ -57,6 +59,17 @@ class LeaveRequestController extends Controller
                 'employee' => $filters['employee'] ?? '',
             ],
             'statuses' => ['pending', 'approved', 'rejected'],
+            'balances' => LeaveBalance::query()
+                ->whereIn('employee_id', $this->visibleEmployees($request)->select('id'))
+                ->where('year', now()->year)
+                ->with(['employee', 'leaveType'])
+                ->get()->map(fn (LeaveBalance $balance): array => [
+                    'id' => $balance->id,
+                    'employee_name' => $balance->employee?->full_name,
+                    'type' => $balance->leaveType?->name,
+                    'year' => $balance->year,
+                    'remaining_days' => $balance->remaining_days,
+                ]),
         ]);
     }
 
@@ -64,11 +77,13 @@ class LeaveRequestController extends Controller
     {
         $attributes = $request->validate([
             'employee_id' => ['required', 'integer', Rule::exists('employees', 'id')],
-            'leave_type_id' => ['required', 'integer', Rule::exists('leave_types', 'id')],
+            'leave_type_id' => ['required', 'integer', Rule::exists('leave_types', 'id')->where('is_active', true)],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'reason' => ['required', 'string', 'max:2000'],
         ]);
+
+        abort_unless($this->visibleEmployees($request)->whereKey($attributes['employee_id'])->exists(), 403);
 
         $attributes['requested_days'] = $this->calculateRequestedDays($attributes['start_date'], $attributes['end_date']);
         $attributes['status'] = 'pending';
@@ -164,6 +179,23 @@ class LeaveRequestController extends Controller
         });
 
         return back()->with('success', 'Leave request rejected.');
+    }
+
+    private function visibleEmployees(Request $request): Builder
+    {
+        $query = Employee::query();
+        if ($request->user()->hasRole('admin', 'hr')) {
+            return $query;
+        }
+
+        $employeeId = $request->user()->employee?->id;
+
+        return $query->where(function ($query) use ($request, $employeeId): void {
+            $query->where('id', $employeeId ?? 0);
+            if ($employeeId && $request->user()->hasRole('manager')) {
+                $query->orWhere('manager_id', $employeeId);
+            }
+        });
     }
 
     private function authorizeDecision(User $user, LeaveRequest $leaveRequest): void

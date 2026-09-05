@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import AppLayout from '../../../Layouts/AppLayout';
+import SafeAvatar from '../../../Components/Avatar';
 import type { AttendanceRecord, Employee, EmployeeProfile, LeaveBalance, LeaveRequest, PayrollItem } from '../../../types';
 
 type Props = {
@@ -110,15 +111,7 @@ export default function Show({ employee }: Props) {
 }
 
 function Avatar({ employee }: { employee: EmployeeProfile }) {
-    if (employee.avatar_url) {
-        return <img alt="" className="h-24 w-24 rounded-lg object-cover" src={employee.avatar_url} />;
-    }
-
-    return (
-        <div className="grid h-24 w-24 shrink-0 place-items-center rounded-lg bg-blue-50 text-2xl font-semibold text-blue-700">
-            {initials(employee.full_name)}
-        </div>
-    );
+    return <SafeAvatar name={employee.full_name} src={employee.avatar_url} className="h-24 w-24 text-2xl" />;
 }
 
 function InfoPanel({ children, title }: { children: ReactNode; title: string }) {
@@ -206,14 +199,6 @@ function EmptyState({ message }: { message: string }) {
     return <p className="rounded-lg border border-dashed border-zinc-300 px-3 py-6 text-center text-sm text-zinc-500">{message}</p>;
 }
 
-function initials(name: string) {
-    return name
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part) => part[0]?.toUpperCase())
-        .join('');
-}
 
 function formatDate(value?: string | null) {
     if (! value) {

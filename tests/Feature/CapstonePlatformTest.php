@@ -55,6 +55,7 @@ it('streams employee and payroll csv exports from the reusable helper', function
     $employee = capstoneActor('employee', [
         'employee_number' => 'PHQ-9001',
         'first_name' => 'Ama',
+        'middle_name' => null,
         'last_name' => 'Mensah',
         'work_email' => 'ama@example.test',
     ]);
@@ -87,10 +88,12 @@ it('streams employee and payroll csv exports from the reusable helper', function
     $employeeCsv = $employeeExport->streamedContent();
     $payrollCsv = $payrollExport->streamedContent();
 
-    expect($employeeCsv)->toContain('Employee Number,Name,Department')
-        ->and($employeeCsv)->toContain('PHQ-9001,Ama Mensah')
-        ->and($payrollCsv)->toContain('Employee Number,Name,Department')
-        ->and($payrollCsv)->toContain('PHQ-9001,Ama Mensah');
+    foreach ([$employeeCsv, $payrollCsv] as $csv) {
+        $rows = array_map(fn (string $line): array => str_getcsv($line, ',', '"', ''), explode("\n", trim($csv)));
+        expect(array_slice($rows[0], 0, 3))->toBe(['Employee Number', 'Name', 'Department']);
+        $employeeRow = collect($rows)->first(fn (array $row): bool => $row[0] === 'PHQ-9001');
+        expect($employeeRow[1])->toBe('Ama Mensah');
+    }
 });
 
 it('proves the full approval workflow updates balances only once', function (): void {

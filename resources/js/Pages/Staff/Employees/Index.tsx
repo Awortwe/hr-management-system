@@ -2,6 +2,7 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import AppLayout from '../../../Layouts/AppLayout';
+import SafeAvatar from '../../../Components/Avatar';
 import type { Department, Employee, Paginated, Position, User } from '../../../types';
 
 type Props = {
@@ -488,15 +489,7 @@ export default function Index({ employees, departments, positions, managers, use
 function Avatar({ employee, size = 'md' }: { employee: Employee; size?: 'md' | 'lg' }) {
     const classes = size === 'lg' ? 'h-16 w-16 text-lg' : 'h-12 w-12 text-sm';
 
-    if (employee.avatar_url) {
-        return <img alt="" className={`${classes} shrink-0 rounded-lg object-cover`} src={employee.avatar_url} />;
-    }
-
-    return (
-        <div className={`${classes} grid shrink-0 place-items-center rounded-lg bg-blue-50 font-semibold text-blue-700`}>
-            {initials(employee.full_name)}
-        </div>
-    );
+    return <SafeAvatar name={employee.full_name} src={employee.avatar_url} className={classes} />;
 }
 
 function Field({ children, error, label }: { children: ReactNode; error?: string; label: string }) {
@@ -538,14 +531,6 @@ function Stat({ label, value }: { label: string; value: string }) {
     );
 }
 
-function initials(name: string) {
-    return name
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part) => part[0]?.toUpperCase())
-        .join('');
-}
 
 function titleCase(value: string) {
     return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());

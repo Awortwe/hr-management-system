@@ -3,14 +3,16 @@ import AppLayout from '../../../Layouts/AppLayout';
 import type { AttendanceOverviewRow, AttendanceSummary } from '../../../types';
 
 type Props = {
+    companyWide: boolean;
     workDate: string;
     rows: AttendanceOverviewRow[];
     summary: AttendanceSummary;
 };
 
-export default function Index({ workDate, rows, summary }: Props) {
+export default function Index({ workDate, rows, summary, companyWide }: Props) {
+    const title = companyWide ? 'Company Attendance' : 'Team Attendance';
     function updateDate(date: string) {
-        router.get('/manager/attendance', { date }, {
+        router.get(companyWide ? '/staff/attendance' : '/manager/attendance', { date }, {
             preserveScroll: true,
             preserveState: true,
             replace: true,
@@ -19,15 +21,12 @@ export default function Index({ workDate, rows, summary }: Props) {
 
     return (
         <AppLayout>
-            <Head title="Team Attendance" />
+            <Head title={title} />
 
             <div className="flex flex-col gap-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold">Team Attendance</h1>
-                        <p className="mt-1 text-sm text-zinc-600">
-                            Review your direct reports for one work date at a time.
-                        </p>
+                        <h1 className="text-2xl font-semibold">{title}</h1>
                     </div>
                     <label className="block">
                         <span className="text-sm font-medium text-zinc-700">Work Date</span>
@@ -82,7 +81,7 @@ export default function Index({ workDate, rows, summary }: Props) {
                                 {rows.length === 0 && (
                                     <tr>
                                         <td className="px-4 py-8 text-center text-zinc-500" colSpan={6}>
-                                            No direct reports found for your employee profile.
+                                            No employees found.
                                         </td>
                                     </tr>
                                 )}

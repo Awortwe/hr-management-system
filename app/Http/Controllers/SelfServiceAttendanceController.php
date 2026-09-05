@@ -7,6 +7,7 @@ use App\Models\Employee;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -49,8 +50,9 @@ class SelfServiceAttendanceController extends Controller
             : today()->toDateString();
         $manager = $request->user()?->employee;
 
-        $teamMembers = $manager
-            ? $manager->subordinates()
+        $companyWide = $request->user()->hasRole('admin', 'hr');
+        $teamMembers = $companyWide || $manager
+            ? ($companyWide ? Employee::query() : $manager->subordinates())
                 ->with(['department:id,name', 'position:id,title'])
                 ->orderBy('first_name')
                 ->get()
@@ -83,6 +85,7 @@ class SelfServiceAttendanceController extends Controller
         });
 
         return Inertia::render('Manager/Attendance/Index', [
+            'companyWide' => $companyWide,
             'workDate' => $workDate,
             'rows' => $rows->values(),
             'summary' => [
@@ -104,21 +107,24 @@ class SelfServiceAttendanceController extends Controller
             return back()->with('error', 'We could not find an employee profile linked to your login yet.');
         }
 
-        $attendance = $this->todayRecord($employee);
+        return DB::transaction(function () use ($employee): RedirectResponse {
+            Employee::query()->whereKey($employee->id)->lockForUpdate()->firstOrFail();
+            $attendance = $this->todayRecord($employee);
 
-        if ($attendance->clock_in_at) {
-            return back()->with('error', 'You are already clocked in for today.');
-        }
+            if ($attendance->clock_in_at) {
+                return back()->with('error', 'You are already clocked in for today.');
+            }
 
-        $clockIn = now();
+            $clockIn = now();
 
-        $attendance->fill([
-            'clock_in_at' => $clockIn,
-            'status' => $this->statusFromClockIn($clockIn),
-            'worked_minutes' => 0,
-        ])->save();
+            $attendance->fill([
+                'clock_in_at' => $clockIn,
+                'status' => $this->statusFromClockIn($clockIn),
+                'worked_minutes' => 0,
+            ])->save();
 
-        return back()->with('success', 'You are clocked in. Have a good shift.');
+            return back()->with('success', 'You are clocked in. Have a good shift.');
+        });
     }
 
     public function clockOut(Request $request): RedirectResponse
@@ -129,30 +135,34 @@ class SelfServiceAttendanceController extends Controller
             return back()->with('error', 'We could not find an employee profile linked to your login yet.');
         }
 
-        $attendance = $this->todayRecord($employee);
+        return DB::transaction(function () use ($employee): RedirectResponse {
+            Employee::query()->whereKey($employee->id)->lockForUpdate()->firstOrFail();
+            $attendance = $this->todayRecord($employee);
 
-        if (! $attendance->clock_in_at) {
-            return back()->with('error', 'Please clock in before you clock out.');
-        }
+            if (! $attendance->clock_in_at) {
+                return back()->with('error', 'Please clock in before you clock out.');
+            }
 
-        if ($attendance->clock_out_at) {
-            return back()->with('error', 'You are already clocked out for today.');
-        }
+            if ($attendance->clock_out_at) {
+                return back()->with('error', 'You are already clocked out for today.');
+            }
 
-        $clockOut = now();
+            $clockOut = now();
 
-        $attendance->fill([
-            'clock_out_at' => $clockOut,
-            'worked_minutes' => (int) $attendance->clock_in_at->diffInMinutes($clockOut),
-        ])->save();
+            $attendance->fill([
+                'clock_out_at' => $clockOut,
+                'worked_minutes' => (int) $attendance->clock_in_at->diffInMinutes($clockOut),
+            ])->save();
 
-        return back()->with('success', 'You are clocked out. Nice work today.');
+            return back()->with('success', 'You are clocked out. Nice work today.');
+        });
     }
 
     private function todayRecord(Employee $employee): AttendanceRecord
     {
-        return AttendanceRecord::query()->firstOrNew([
+        return AttendanceRecord::query()->whereDate('work_date', today())->firstOrNew([
             'employee_id' => $employee->id,
+        ], [
             'work_date' => today()->toDateString(),
         ]);
     }

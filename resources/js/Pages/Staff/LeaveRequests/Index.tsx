@@ -5,6 +5,7 @@ import AppLayout from '../../../Layouts/AppLayout';
 import type { Employee, LeaveRequest, LeaveType, Paginated } from '../../../types';
 
 type Props = {
+    balances: { id: number; employee_name: string; type: string; year: number; remaining_days: number }[];
     leaveRequests: Paginated<LeaveRequest>;
     employees: Pick<Employee, 'id' | 'employee_number' | 'full_name'>[];
     leaveTypes: LeaveType[];
@@ -35,7 +36,7 @@ const emptyRequestForm: RequestForm = {
     reason: '',
 };
 
-export default function Index({ leaveRequests, employees, leaveTypes, filters, statuses }: Props) {
+export default function Index({ leaveRequests, employees, leaveTypes, filters, statuses, balances }: Props) {
     const [requestDialogOpen, setRequestDialogOpen] = useState(false);
     const [approving, setApproving] = useState<LeaveRequest | null>(null);
     const [rejecting, setRejecting] = useState<LeaveRequest | null>(null);
@@ -50,7 +51,7 @@ export default function Index({ leaveRequests, employees, leaveTypes, filters, s
     }), [leaveRequests.data]);
 
     function openRequestDialog() {
-        requestForm.setData(emptyRequestForm);
+        requestForm.setData({ ...emptyRequestForm, employee_id: employees.length === 1 ? String(employees[0].id) : '' });
         requestForm.clearErrors();
         setRequestDialogOpen(true);
     }
@@ -127,13 +128,11 @@ export default function Index({ leaveRequests, employees, leaveTypes, filters, s
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-semibold">Leave Requests</h1>
-                        <p className="mt-1 text-sm text-zinc-600">
-                            Review pending leave, record decisions, and keep employee balances in sync.
-                        </p>
                     </div>
                     <button
                         className="rounded-md bg-zinc-950 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800"
                         onClick={openRequestDialog}
+                        disabled={employees.length === 0}
                         type="button"
                     >
                         New Request
@@ -144,6 +143,12 @@ export default function Index({ leaveRequests, employees, leaveTypes, filters, s
                     <Metric label="Pending" tone="amber" value={String(totals.pending)} />
                     <Metric label="Approved" tone="emerald" value={String(totals.approved)} />
                     <Metric label="Rejected" tone="rose" value={String(totals.rejected)} />
+                </section>
+                <section className="border-y border-zinc-200 py-4">
+                    <h2 className="text-base font-semibold">Leave Balances</h2>
+                    <div className="mt-3 max-h-64 overflow-auto"><table className="w-full text-left text-sm"><thead><tr><th className="p-2">Employee</th><th className="p-2">Type</th><th className="p-2">Year</th><th className="p-2">Remaining Days</th></tr></thead><tbody>{balances.map(balance => <tr key={balance.id} className="border-t border-zinc-100"><td className="p-2">{balance.employee_name}</td><td className="p-2">{balance.type}</td><td className="p-2">{balance.year}</td><td className="p-2 font-semibold">{balance.remaining_days}</td></tr>)}</tbody></table></div>
+                    {balances.length === 0 && <p className="mt-3 text-sm text-zinc-500">No balances recorded for this year.</p>}
+                    {employees.length === 0 && <p className="mt-3 text-sm text-zinc-600">No employee profile is linked to your account. Please contact HR.</p>}
                 </section>
 
                 <section className="rounded-lg border border-zinc-200 bg-white p-4">

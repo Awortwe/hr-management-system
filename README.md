@@ -1,6 +1,27 @@
 # PeopleHQ HR Management System
 
-PeopleHQ is a browser-based HR management system built in one Laravel codebase with React screens rendered through Inertia.js. The first release will cover role-based access, employee records, organisation structure, leave, attendance, timesheets, payroll, dashboards, exports, settings, notifications, and audit history.
+PeopleHQ is a browser-based HR management system built with Laravel 13, React 19, Inertia.js 3, Tailwind CSS 4, and MySQL. It includes session authentication, four roles, employee records and photos, departments and positions, leave approvals and balances, personal and company attendance, payroll, printable payslips, dashboards, and CSV exports. Notifications, calendars, settings, and audit history remain future enhancements.
+
+## Completed Workflows
+
+- Admin and HR have the company dashboard, directory, organization management, leave approvals, company attendance, and payroll.
+- Managers have a personal home, direct-report directory and attendance, and leave decisions restricted to their reports.
+- Employees have a personal home, profile and balances, clock-in/out, and their own leave requests.
+- Admins can create, edit, and delete login accounts. Employee records can be linked to those accounts through the employee form.
+- All HR routes require a session. Sign-in is throttled; logout invalidates the session. Navigation works on mobile and desktop.
+
+## Verification
+
+```powershell
+php artisan test
+npx tsc --noEmit
+npm run build
+npm run test:browser
+```
+
+Pest uses an isolated in-memory SQLite database. The browser suite creates and removes a separate temporary SQLite database, starts its own server on a free port, and exercises real login, attendance, leave approval, account changes, CSV downloads, and PDF printing. Neither suite migrates or seeds your configured MySQL database. Browser screenshots and a generated payslip are written under `storage/framework/testing/browser`.
+
+The browser suite uses installed Microsoft Edge on Windows. On other platforms run `npx playwright install chromium` first. `PHP_BINARY` can select a PHP 8.3+ executable; `BROWSER_CHANNEL` can select another supported installed browser.
 
 ## Step 1 Status
 
@@ -21,6 +42,15 @@ Inertia gives this project one Laravel application, one authentication system, o
 ## Local Runtime
 
 Laravel 13 requires PHP 8.3 or newer. This workspace currently exposes XAMPP PHP 8.2.12 on the command line, so Artisan commands and tests need Herd or another PHP 8.3+ binary selected before they can run locally.
+
+On this Windows workspace, a separate PHP 8.3 runtime is available through the helper below. It does not change XAMPP or your system PATH:
+
+```powershell
+.\scripts\artisan.ps1 -ArtisanArguments test
+.\scripts\artisan.ps1 -ArtisanArguments @('serve', '--host=127.0.0.1', '--port=8001')
+```
+
+On another machine, supply `-Php 'C:\path\to\php.exe'` or select PHP 8.3+ on PATH. Create your MySQL database and run migrations manually before using the application. There are no new migrations for the completion fixes.
 
 When PHP 8.3+ is active:
 
