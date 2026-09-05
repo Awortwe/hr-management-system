@@ -4,7 +4,7 @@ PeopleHQ is a browser-based HR management system built with Laravel 13, React 19
 
 ## Completed Workflows
 
-The [Word user guide](docs/PeopleHQ_Application_User_Guide.docx) explains local startup, role permissions, and the application workflows step by step.
+The [Word user guide](docs/PeopleHQ_Application_User_Guide.docx) explains local startup, role permissions, and the application workflows step by step. The [project proposal](docs/PeopleHQ_Project_Proposal.docx) summarizes the business need, scope, requirements, technology choices, and presentation talking points.
 
 - Admin and HR have the company dashboard, directory, organization management, leave approvals, company attendance, and payroll.
 - Managers have a personal home, direct-report directory and attendance, and leave decisions restricted to their reports.

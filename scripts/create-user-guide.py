@@ -136,6 +136,7 @@ steps([
     'Choose the Sign out icon beside your email when finished. Admin and HR see the company dashboard; Manager and Employee see a personal home screen.',
 ])
 p('For an existing seeded demo only: awortwe.enock@peoplehq.test with password password. A new account created by an administrator uses the password that administrator sets.')
+p('PeopleHQ does not send account passwords or workflow notifications by email in the current build. Administrators should share new account credentials through the company\'s approved secure channel.')
 p('Reading order: access and accounts on page 2; organization on page 3; employees on page 4; leave on page 5; attendance on page 6; payroll on page 7; reporting and help on page 8.')
 
 page('Access and user accounts')
@@ -162,6 +163,7 @@ steps([
     'To remove login access, select the trash icon and confirm Delete Account. The employee record is not deleted by this action.',
 ])
 p('You cannot delete your own administrator account or remove your own administrator role. Email addresses must be unique. If a form fails validation, correct the displayed error and submit again.')
+p('Creating or updating a user account changes database access only. The system does not email the employee their password.')
 
 page('Organization setup')
 h('Step 5 Create departments and positions')
@@ -236,6 +238,7 @@ steps([
 ])
 p('Remaining days = entitled days + adjusted days - used days. The value is calculated, not stored separately. If a matching employee/type/year balance does not exist during approval, the app creates it using the type\'s allowance. A repeated approval does not deduct twice.')
 p('Current rules: approved and rejected decisions cannot be reversed through this screen. Approval does not block a negative balance. All days are charged to the start-date year, including a cross-year request. Changing a leave type\'s allowance does not rewrite existing balances. There is no separate balance-allocation editor in the current interface.')
+p('Leave submission and decisions are visible inside the application. The current build does not send leave request emails.')
 
 page('Attendance and personal information')
 h('Step 10 Clock in and clock out')
@@ -247,6 +250,7 @@ steps([
     'Review Today and Recent Attendance. Clock In becomes disabled after clock-in; Clock Out is enabled only after clock-in and becomes disabled after clock-out.',
 ])
 p('Repeated clock actions produce friendly messages. The database also permits only one attendance row per employee and work date. There is no manual time-editing or overnight-shift workflow in the current screen.')
+p('Attendance changes are stored in the application only. The current build does not send attendance confirmation emails.')
 h('Review company or team attendance')
 steps([
     'Admin or HR opens Company Attendance. Managers open Team Attendance to view only their direct reports.',
@@ -281,6 +285,7 @@ table(['Item', 'Rule', 'Example amount'], [
     ['Net pay', 'Gross less deductions', '4,816.00'],
 ], [1.6, 3.0, 1.65])
 p('A payslip stores a snapshot of employee and pay details at generation time. The run is marked finalized, but it does not send money to a bank. There is no exchange-rate conversion; use a consistent currency when interpreting company totals.')
+p('Payroll generation creates records and printable payslips only. The current build does not send salary notification emails.')
 h('Print or save a payslip as PDF')
 steps([
     'Select Print Payslip on a payroll row. A standalone document opens in a new browser tab.',
