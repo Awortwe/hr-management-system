@@ -89,8 +89,13 @@ export type EmployeeProfile = Employee & {
 export type LeaveType = {
     id: number;
     name: string;
+    annual_allowance_days: number;
     color: string | null;
-    is_paid?: boolean;
+    is_paid: boolean;
+    is_active: boolean;
+    balances_count?: number;
+    requests_count?: number;
+    created_at?: string | null;
 };
 
 export type LeaveBalance = {

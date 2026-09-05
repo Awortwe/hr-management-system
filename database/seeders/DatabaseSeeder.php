@@ -50,9 +50,9 @@ class DatabaseSeeder extends Seeder
             });
 
             $leaveTypes = collect([
-                ['name' => 'Annual Leave', 'annual_allowance_days' => 20, 'color' => '#2563eb'],
-                ['name' => 'Sick Leave', 'annual_allowance_days' => 10, 'color' => '#16a34a'],
-                ['name' => 'Study Leave', 'annual_allowance_days' => 5, 'color' => '#9333ea'],
+                ['name' => 'Annual Leave', 'annual_allowance_days' => 20, 'is_paid' => true, 'color' => '#2563eb'],
+                ['name' => 'Sick Leave', 'annual_allowance_days' => 10, 'is_paid' => true, 'color' => '#16a34a'],
+                ['name' => 'Unpaid Leave', 'annual_allowance_days' => 0, 'is_paid' => false, 'color' => '#71717a'],
             ])->map(fn (array $attributes): LeaveType => LeaveType::factory()->create($attributes));
 
             $employees = collect();

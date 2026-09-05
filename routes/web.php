@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\LeaveTypeController;
 use App\Http\Controllers\PositionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -20,7 +21,7 @@ Route::get('/', function () {
 });
 
 Route::middleware('role:admin,hr')->prefix('staff')->name('staff.')->group(function (): void {
-    Route::get('/leave', fn () => 'Leave administration area')->name('leave.index');
+    Route::resource('leave-types', LeaveTypeController::class)->except(['create', 'show', 'edit']);
     Route::resource('employees', EmployeeController::class)->except(['create', 'edit']);
 });
 
