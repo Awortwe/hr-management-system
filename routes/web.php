@@ -5,6 +5,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LeaveTypeController;
 use App\Http\Controllers\PositionController;
+use App\Http\Controllers\SelfServiceAttendanceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -47,4 +48,7 @@ Route::middleware('role:manager')->prefix('manager')->name('manager.')->group(fu
 
 Route::middleware('role:employee,manager,hr,admin')->prefix('self-service')->name('self-service.')->group(function (): void {
     Route::get('/profile', fn () => 'Employee self-service area')->name('profile.show');
+    Route::get('/attendance', [SelfServiceAttendanceController::class, 'index'])->name('attendance.index');
+    Route::post('/attendance/clock-in', [SelfServiceAttendanceController::class, 'clockIn'])->name('attendance.clock-in');
+    Route::post('/attendance/clock-out', [SelfServiceAttendanceController::class, 'clockOut'])->name('attendance.clock-out');
 });

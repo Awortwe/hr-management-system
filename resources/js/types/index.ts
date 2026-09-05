@@ -129,11 +129,13 @@ export type LeaveRequest = {
 };
 
 export type AttendanceRecord = {
-    id: number;
+    id: number | null;
     work_date: string;
     clock_in_at: string | null;
     clock_out_at: string | null;
     status: string;
+    worked_minutes?: number;
+    exists?: boolean;
 };
 
 export type PayrollItem = {
