@@ -1,6 +1,7 @@
 <?php
 
 use App\Mail\AttendanceUpdated;
+use App\Mail\EmployeeAccountCreated;
 use App\Mail\LeaveRequestDecision;
 use App\Mail\LeaveRequestSubmitted;
 use App\Mail\SalaryPaymentProcessed;
@@ -50,6 +51,28 @@ it('emails a salary payment notice only for newly generated payslips', function 
         && $mail->item->payroll->period_label === 'September 2026');
 
     expect(PayrollItem::query()->count())->toBe(1);
+});
+
+it('emails login credentials when an admin creates an account', function (): void {
+    Mail::fake();
+
+    $admin = User::factory()->role('admin')->create();
+
+    $this->actingAs($admin)->post(route('admin.users.store'), [
+        'name' => 'New Employee',
+        'email' => 'new.employee@example.test',
+        'role' => 'employee',
+        'password' => 'secure-password-123',
+        'password_confirmation' => 'secure-password-123',
+    ])->assertRedirect();
+
+    $user = User::query()->where('email', 'new.employee@example.test')->firstOrFail();
+
+    Mail::assertSent(EmployeeAccountCreated::class, fn (EmployeeAccountCreated $mail): bool => $mail->hasTo('new.employee@example.test')
+        && $mail->user->is($user)
+        && $mail->plainPassword === 'secure-password-123');
+
+    expect($user->password)->not->toBe('secure-password-123');
 });
 
 it('emails attendance confirmations after successful clock in and clock out', function (): void {
