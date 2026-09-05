@@ -103,3 +103,9 @@ Factories avoid the factory-explosion bug by not nesting relationship factories 
 Departments and positions are the first complete CRUD modules. Their controllers validate create and edit requests, use `Rule::unique()->ignore($model)` so unchanged names and codes do not fail during edits, include related totals with `withCount()`, and protect destructive deletes when employees still reference a record.
 
 The Inertia pages import shared TypeScript contracts from `resources/js/types/index.ts`, use the same table, dialog, `useForm`, toast, filter, and pagination patterns, and sit behind the `role:admin,hr` middleware group.
+
+## Step 5 Employee Backend
+
+The employee controller uses eager loading on the index query so department, position, manager, and linked user data do not create N+1 queries. Search, department, and status filters stack as optional query clauses. The profile endpoint loads nested relations such as department manager, position department, manager position, leave request approvers, recent attendance, and payroll history with caps on high-volume relations.
+
+Employee store and update actions share one validation method. Profile photos are stored on the public disk, replaced atomically after a new upload is accepted, deleted when requested, and removed when an employee is archived. Store redirects with `to_route()` to the new profile; update returns `back()` to preserve the current page; destroy redirects with `to_route()` because the deleted profile page should no longer be the destination.

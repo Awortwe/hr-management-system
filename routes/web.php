@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\PositionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -19,8 +20,8 @@ Route::get('/', function () {
 });
 
 Route::middleware('role:admin,hr')->prefix('staff')->name('staff.')->group(function (): void {
-    Route::get('/employees', fn () => 'Employees area')->name('employees.index');
     Route::get('/leave', fn () => 'Leave administration area')->name('leave.index');
+    Route::resource('employees', EmployeeController::class)->except(['create', 'edit']);
 });
 
 Route::middleware('role:admin,hr')->prefix('organization')->name('organization.')->group(function (): void {

@@ -9,7 +9,53 @@ export type User = {
 
 export type Employee = {
     id: number;
+    employee_number?: string;
     full_name: string;
+    work_email?: string | null;
+    phone?: string | null;
+    status?: string;
+    department?: Pick<Department, 'id' | 'name' | 'code'> | null;
+    position?: Pick<Position, 'id' | 'title'> | null;
+    manager?: Employee | null;
+    user?: User | null;
+    leave_requests_count?: number;
+    attendance_records_count?: number;
+    payroll_items_count?: number;
+};
+
+export type EmployeeProfile = Employee & {
+    user_id: number | null;
+    department_id: number;
+    position_id: number;
+    manager_id: number | null;
+    first_name: string;
+    middle_name: string | null;
+    last_name: string;
+    date_of_birth: string | null;
+    gender: string | null;
+    profile_photo_path: string | null;
+    profile_photo_url: string | null;
+    personal_email: string | null;
+    residential_address: string | null;
+    city_region: string | null;
+    hire_date: string;
+    employment_type: string;
+    work_location: string | null;
+    emergency_contact_name: string | null;
+    emergency_contact_relationship: string | null;
+    emergency_contact_phone: string | null;
+    basic_salary: string;
+    currency: string;
+    bank_name: string | null;
+    bank_account_name: string | null;
+    bank_account_number: string | null;
+    tax_reference: string | null;
+    ssnit_reference: string | null;
+    subordinates: Employee[];
+    leave_balances: unknown[];
+    leave_requests: unknown[];
+    attendance_records: unknown[];
+    payroll_items: unknown[];
 };
 
 export type Department = {
