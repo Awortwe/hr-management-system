@@ -162,15 +162,36 @@ export type AttendanceSummary = {
 
 export type PayrollItem = {
     id: number;
+    payroll_id?: number;
+    employee_id?: number;
+    employee_number?: string;
+    employee_name?: string;
+    department_name?: string | null;
+    position_title?: string | null;
+    basic_salary: string;
+    allowances_total?: string;
     gross_pay: string;
     net_pay: string;
     deductions_total: string;
+    currency?: string;
     payroll?: {
         id: number;
         month: number;
         year: number;
         status: string;
     } | null;
+};
+
+export type Payroll = {
+    id: number;
+    month: number;
+    year: number;
+    status: string;
+    gross_total: string;
+    deduction_total: string;
+    net_total: string;
+    items_count?: number;
+    finalized_at?: string | null;
 };
 
 export type Department = {

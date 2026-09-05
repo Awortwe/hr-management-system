@@ -4,6 +4,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LeaveTypeController;
+use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\SelfServiceAttendanceController;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,9 @@ Route::middleware('role:admin,hr,manager')->prefix('staff')->name('staff.')->gro
 });
 
 Route::middleware('role:admin,hr')->prefix('staff')->name('staff.')->group(function (): void {
+    Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
+    Route::post('/payroll/run', [PayrollController::class, 'run'])->name('payroll.run');
+    Route::get('/payroll-items/{payroll_item}/payslip', [PayrollController::class, 'payslip'])->name('payroll-items.payslip');
     Route::resource('leave-types', LeaveTypeController::class)->except(['create', 'show', 'edit']);
     Route::resource('employees', EmployeeController::class)->except(['create', 'edit']);
 });
