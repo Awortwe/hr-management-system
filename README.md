@@ -1,6 +1,6 @@
 # PeopleHQ HR Management System
 
-PeopleHQ is a browser-based HR management system built with Laravel 13, React 19, Inertia.js 3, Tailwind CSS 4, and MySQL. It includes session authentication, four roles, employee records and photos, departments and positions, leave approvals and balances, personal and company attendance, payroll, printable payslips, dashboards, CSV exports, searchable lists, and company settings. Notifications, calendars, and audit history remain future enhancements.
+PeopleHQ is a browser-based HR management system built with Laravel 13, React 19, Inertia.js 3, Tailwind CSS 4, and MySQL. It includes session authentication, four roles, employee records and photos, departments and positions, leave approvals and balances, personal and company attendance, payroll, printable payslips, dashboards, CSV exports, searchable lists, company settings, and employee email notifications. In-app notifications, calendars, and audit history remain future enhancements.
 
 ## Completed Workflows
 
@@ -24,6 +24,23 @@ npm run build
 ```
 
 Sign in as an admin and open **Company Settings** (`/admin/company`). Update the company name, subtitle, email, phone, website, address, and registration number, then save. Branding updates on subsequent page loads/navigation, including the login page, headers, sidebar, browser titles, CSV filenames, and printable payslips. Contact and registration details appear on payslips; only the public name/subtitle are shared with the login screen. Existing payslips use current company details when reopened; employee salary snapshots are unchanged. Before the migration is applied, existing pages retain default branding and the settings form cannot be saved.
+
+## Email Notifications
+
+The application sends employee emails from `info@hr-manager.pankhost.com` for salary payment notices, attendance clock-in/out confirmations, leave request submissions, and leave approval/rejection updates. Keep private SMTP credentials in your local `.env` file only:
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=your-smtp-host
+MAIL_PORT=587
+MAIL_USERNAME=info@hr-manager.pankhost.com
+MAIL_PASSWORD=your-app-password-or-smtp-password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS="info@hr-manager.pankhost.com"
+MAIL_FROM_NAME="${APP_NAME}"
+```
+
+During development you can leave `MAIL_MAILER=log`; Laravel writes emails to the log instead of sending them.
 
 ## Verification
 

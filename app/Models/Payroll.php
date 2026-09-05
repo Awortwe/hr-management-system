@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 #[Fillable([
     'month',
@@ -33,6 +35,11 @@ class Payroll extends Model
             'net_total' => 'decimal:2',
             'finalized_at' => 'datetime',
         ];
+    }
+
+    protected function periodLabel(): Attribute
+    {
+        return Attribute::get(fn (): string => Carbon::create($this->year, $this->month)->format('F Y'));
     }
 
     public function items(): HasMany

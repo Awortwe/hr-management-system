@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\Payroll;
 use App\Models\PayrollItem;
 use App\Support\CsvExporter;
+use App\Support\EmployeeNotifications;
 use App\Support\EmployeeSearch;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -64,8 +65,9 @@ class PayrollController extends Controller
         ]);
         $created = 0;
         $skipped = 0;
+        $newPayslips = collect();
 
-        DB::transaction(function () use ($attributes, &$created, &$skipped, $request): void {
+        DB::transaction(function () use ($attributes, &$created, &$skipped, &$newPayslips, $request): void {
             $payroll = Payroll::query()->firstOrCreate(
                 [
                     'month' => $attributes['month'],
@@ -84,7 +86,7 @@ class PayrollController extends Controller
                 ->where('status', 'active')
                 ->orderBy('first_name')
                 ->get()
-                ->each(function (Employee $employee) use ($payroll, &$created, &$skipped): void {
+                ->each(function (Employee $employee) use ($payroll, &$created, &$skipped, &$newPayslips): void {
                     $basicSalary = (float) $employee->basic_salary;
                     $allowances = round($basicSalary * 0.12, 2);
                     $grossPay = round($basicSalary + $allowances, 2);
@@ -117,7 +119,14 @@ class PayrollController extends Controller
                         ],
                     );
 
-                    $item->wasRecentlyCreated ? $created++ : $skipped++;
+                    if ($item->wasRecentlyCreated) {
+                        $created++;
+                        $newPayslips->push($item);
+
+                        return;
+                    }
+
+                    $skipped++;
                 });
 
             $totals = $payroll->items()
@@ -133,6 +142,8 @@ class PayrollController extends Controller
                 'finalized_at' => now(),
             ]);
         });
+
+        $newPayslips->each(fn (PayrollItem $item) => EmployeeNotifications::salaryPayment($item));
 
         return back()->with('success', "Payroll run complete. {$created} payslips generated, {$skipped} already paid.");
     }

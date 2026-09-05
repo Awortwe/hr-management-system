@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AttendanceRecord;
 use App\Models\Employee;
+use App\Support\EmployeeNotifications;
 use App\Support\EmployeeSearch;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -111,7 +112,9 @@ class SelfServiceAttendanceController extends Controller
             return back()->with('error', 'We could not find an employee profile linked to your login yet.');
         }
 
-        return DB::transaction(function () use ($employee): RedirectResponse {
+        $clockedInRecord = null;
+
+        $response = DB::transaction(function () use ($employee, &$clockedInRecord): RedirectResponse {
             Employee::query()->whereKey($employee->id)->lockForUpdate()->firstOrFail();
             $attendance = $this->todayRecord($employee);
 
@@ -127,8 +130,16 @@ class SelfServiceAttendanceController extends Controller
                 'worked_minutes' => 0,
             ])->save();
 
+            $clockedInRecord = $attendance;
+
             return back()->with('success', 'You are clocked in. Have a good shift.');
         });
+
+        if ($clockedInRecord) {
+            EmployeeNotifications::attendanceUpdated($clockedInRecord, 'clock-in');
+        }
+
+        return $response;
     }
 
     public function clockOut(Request $request): RedirectResponse
@@ -139,7 +150,9 @@ class SelfServiceAttendanceController extends Controller
             return back()->with('error', 'We could not find an employee profile linked to your login yet.');
         }
 
-        return DB::transaction(function () use ($employee): RedirectResponse {
+        $clockedOutRecord = null;
+
+        $response = DB::transaction(function () use ($employee, &$clockedOutRecord): RedirectResponse {
             Employee::query()->whereKey($employee->id)->lockForUpdate()->firstOrFail();
             $attendance = $this->todayRecord($employee);
 
@@ -158,8 +171,16 @@ class SelfServiceAttendanceController extends Controller
                 'worked_minutes' => (int) $attendance->clock_in_at->diffInMinutes($clockOut),
             ])->save();
 
+            $clockedOutRecord = $attendance;
+
             return back()->with('success', 'You are clocked out. Nice work today.');
         });
+
+        if ($clockedOutRecord) {
+            EmployeeNotifications::attendanceUpdated($clockedOutRecord, 'clock-out');
+        }
+
+        return $response;
     }
 
     private function todayRecord(Employee $employee): AttendanceRecord
