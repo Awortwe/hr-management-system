@@ -44,6 +44,7 @@ Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function
 
 Route::middleware('role:manager')->prefix('manager')->name('manager.')->group(function (): void {
     Route::get('/team', fn () => 'Manager team area')->name('team.index');
+    Route::get('/attendance', [SelfServiceAttendanceController::class, 'manager'])->name('attendance.index');
 });
 
 Route::middleware('role:employee,manager,hr,admin')->prefix('self-service')->name('self-service.')->group(function (): void {

@@ -138,6 +138,28 @@ export type AttendanceRecord = {
     exists?: boolean;
 };
 
+export type AttendanceOverviewRow = {
+    employee_id: number;
+    employee_number: string | null;
+    employee_name: string;
+    department: string | null;
+    position: string | null;
+    work_date: string;
+    clock_in_at: string | null;
+    clock_out_at: string | null;
+    status: string;
+    hours_worked: number;
+};
+
+export type AttendanceSummary = {
+    expected: number;
+    present: number;
+    late: number;
+    absent: number;
+    clocked_out: number;
+    total_hours: number;
+};
+
 export type PayrollItem = {
     id: number;
     gross_pay: string;

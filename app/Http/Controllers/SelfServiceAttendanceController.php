@@ -39,6 +39,63 @@ class SelfServiceAttendanceController extends Controller
         ]);
     }
 
+    public function manager(Request $request): Response
+    {
+        $attributes = $request->validate([
+            'date' => ['nullable', 'date'],
+        ]);
+        $workDate = isset($attributes['date'])
+            ? Carbon::parse($attributes['date'])->toDateString()
+            : today()->toDateString();
+        $manager = $request->user()?->employee;
+
+        $teamMembers = $manager
+            ? $manager->subordinates()
+                ->with(['department:id,name', 'position:id,title'])
+                ->orderBy('first_name')
+                ->get()
+            : collect();
+
+        $records = AttendanceRecord::query()
+            ->whereIn('employee_id', $teamMembers->pluck('id'))
+            ->whereDate('work_date', $workDate)
+            ->get()
+            ->keyBy('employee_id');
+
+        $rows = $teamMembers->map(function (Employee $employee) use ($records, $workDate): array {
+            $record = $records->get($employee->id);
+            $hoursWorked = $record?->clock_in_at && $record?->clock_out_at
+                ? round($record->clock_in_at->diffInHours($record->clock_out_at), 2)
+                : 0.0;
+
+            return [
+                'employee_id' => $employee->id,
+                'employee_number' => $employee->employee_number,
+                'employee_name' => $employee->full_name,
+                'department' => $employee->department?->name,
+                'position' => $employee->position?->title,
+                'work_date' => $workDate,
+                'clock_in_at' => $record?->clock_in_at?->toISOString(),
+                'clock_out_at' => $record?->clock_out_at?->toISOString(),
+                'status' => $record?->status ?? 'absent',
+                'hours_worked' => $hoursWorked,
+            ];
+        });
+
+        return Inertia::render('Manager/Attendance/Index', [
+            'workDate' => $workDate,
+            'rows' => $rows->values(),
+            'summary' => [
+                'expected' => $rows->count(),
+                'present' => $rows->where('status', 'present')->count(),
+                'late' => $rows->where('status', 'late')->count(),
+                'absent' => $rows->where('status', 'absent')->count(),
+                'clocked_out' => $rows->whereNotNull('clock_out_at')->count(),
+                'total_hours' => round($rows->sum('hours_worked'), 2),
+            ],
+        ]);
+    }
+
     public function clockIn(Request $request): RedirectResponse
     {
         $employee = $request->user()?->employee;

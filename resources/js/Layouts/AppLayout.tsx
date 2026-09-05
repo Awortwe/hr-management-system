@@ -16,6 +16,7 @@ const navItems: NavItem[] = [
     { label: 'Employees', href: '/staff/employees', roles: ['admin', 'hr'] },
     { label: 'Leave Requests', href: '/staff/leave-requests', roles: ['admin', 'hr', 'manager'] },
     { label: 'Leave Types', href: '/staff/leave-types', roles: ['admin', 'hr'] },
+    { label: 'Team Attendance', href: '/manager/attendance', roles: ['manager'] },
     { label: 'My Profile', href: '/self-service/profile', roles: ['admin', 'hr', 'manager', 'employee'] },
     { label: 'My Attendance', href: '/self-service/attendance', roles: ['admin', 'hr', 'manager', 'employee'] },
 ];
