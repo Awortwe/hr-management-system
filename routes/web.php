@@ -20,8 +20,10 @@ Route::middleware('role:admin,hr,manager')->prefix('staff')->name('staff.')->gro
 
 Route::middleware('role:admin,hr')->prefix('staff')->name('staff.')->group(function (): void {
     Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
+    Route::get('/payroll/export', [PayrollController::class, 'export'])->name('payroll.export');
     Route::post('/payroll/run', [PayrollController::class, 'run'])->name('payroll.run');
     Route::get('/payroll-items/{payroll_item}/payslip', [PayrollController::class, 'payslip'])->name('payroll-items.payslip');
+    Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');
     Route::resource('leave-types', LeaveTypeController::class)->except(['create', 'show', 'edit']);
     Route::resource('employees', EmployeeController::class)->except(['create', 'edit']);
 });

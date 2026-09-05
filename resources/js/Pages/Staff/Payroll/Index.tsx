@@ -56,7 +56,7 @@ export default function Index({ activeEmployeeCount, filters, items, months, pay
                             Run monthly payroll once, then print browser-native payslips for each employee.
                         </p>
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-[180px_140px_auto]">
+                    <div className="grid gap-3 sm:grid-cols-[180px_140px_auto_auto]">
                         <label className="block">
                             <span className="text-sm font-medium text-zinc-700">Month</span>
                             <select className="form-input mt-1" onChange={(event) => updateFilter('month', Number(event.target.value))} value={form.data.month}>
@@ -86,6 +86,14 @@ export default function Index({ activeEmployeeCount, filters, items, months, pay
                             >
                                 Run Payroll
                             </button>
+                        </div>
+                        <div className="flex items-end">
+                            <a
+                                className="w-full rounded-md border border-zinc-300 px-4 py-2 text-center text-sm font-semibold hover:bg-zinc-50"
+                                href={`/staff/payroll/export?month=${form.data.month}&year=${form.data.year}`}
+                            >
+                                Export CSV
+                            </a>
                         </div>
                     </div>
                 </div>

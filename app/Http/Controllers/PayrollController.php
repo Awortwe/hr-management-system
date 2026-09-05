@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\Payroll;
 use App\Models\PayrollItem;
+use App\Support\CsvExporter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PayrollController extends Controller
 {
@@ -139,6 +141,38 @@ class PayrollController extends Controller
             'payroll' => $payrollItem->payroll,
             'currency' => ($payrollItem->snapshot ?? [])['currency'] ?? 'GHS',
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $attributes = $request->validate([
+            'month' => ['required', 'integer', 'between:1,12'],
+            'year' => ['required', 'integer', 'between:2000,2100'],
+        ]);
+
+        $query = PayrollItem::query()
+            ->whereHas('payroll', fn ($query): mixed => $query
+                ->where('month', $attributes['month'])
+                ->where('year', $attributes['year']))
+            ->orderBy('employee_name');
+
+        return CsvExporter::streamCsv(
+            "peoplehq-payroll-{$attributes['year']}-{$attributes['month']}.csv",
+            ['Employee Number', 'Name', 'Department', 'Position', 'Basic Salary', 'Allowances', 'Gross Pay', 'Deductions', 'Net Pay', 'Currency'],
+            $query,
+            fn (PayrollItem $item): array => [
+                $item->employee_number,
+                $item->employee_name,
+                $item->department_name,
+                $item->position_title,
+                $item->basic_salary,
+                $item->allowances_total,
+                $item->gross_pay,
+                $item->deductions_total,
+                $item->net_pay,
+                ($item->snapshot ?? [])['currency'] ?? 'GHS',
+            ],
+        );
     }
 
     private function payrollRow(Payroll $payroll): array

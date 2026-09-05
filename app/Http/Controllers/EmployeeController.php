@@ -6,12 +6,14 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Position;
 use App\Models\User;
+use App\Support\CsvExporter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class EmployeeController extends Controller
@@ -129,6 +131,43 @@ class EmployeeController extends Controller
         return Inertia::render('Staff/Employees/Show', [
             'employee' => $this->employeeProfile($employee),
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $filters = $request->only(['search', 'department', 'status']);
+        $query = Employee::query()
+            ->with(['department:id,name', 'position:id,title', 'manager:id,first_name,middle_name,last_name'])
+            ->when($filters['search'] ?? null, function ($query, string $search): void {
+                $query->where(function ($query) use ($search): void {
+                    $query->where('employee_number', 'like', "%{$search}%")
+                        ->orWhere('first_name', 'like', "%{$search}%")
+                        ->orWhere('middle_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('work_email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
+                });
+            })
+            ->when($filters['department'] ?? null, fn ($query, string $departmentId): mixed => $query->where('department_id', $departmentId))
+            ->when($filters['status'] ?? null, fn ($query, string $status): mixed => $query->where('status', $status))
+            ->orderBy('employee_number');
+
+        return CsvExporter::streamCsv(
+            'peoplehq-employees.csv',
+            ['Employee Number', 'Name', 'Department', 'Position', 'Manager', 'Work Email', 'Phone', 'Status', 'Hire Date'],
+            $query,
+            fn (Employee $employee): array => [
+                $employee->employee_number,
+                $employee->full_name,
+                $employee->department?->name,
+                $employee->position?->title,
+                $employee->manager?->full_name,
+                $employee->work_email,
+                $employee->phone,
+                $employee->status,
+                $employee->hire_date?->toDateString(),
+            ],
+        );
     }
 
     public function update(Request $request, Employee $employee): RedirectResponse
