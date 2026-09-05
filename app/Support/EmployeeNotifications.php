@@ -11,6 +11,7 @@ use App\Models\Employee;
 use App\Models\LeaveRequest;
 use App\Models\PayrollItem;
 use Illuminate\Mail\Mailable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class EmployeeNotifications
@@ -44,12 +45,33 @@ class EmployeeNotifications
         $email = $employee?->user?->email;
 
         if (! $email) {
+            Log::warning('Employee notification skipped because no linked user email exists.', [
+                'employee_id' => $employee?->id,
+                'mailable' => $mailable::class,
+            ]);
+
             return;
         }
 
-        rescue(
-            fn () => Mail::to($email)->send($mailable),
-            report: true,
-        );
+        try {
+            Mail::to($email)->send($mailable);
+
+            Log::info('Employee notification sent.', [
+                'employee_id' => $employee?->id,
+                'user_id' => $employee?->user_id,
+                'recipient' => $email,
+                'mailable' => $mailable::class,
+            ]);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            Log::error('Employee notification failed.', [
+                'employee_id' => $employee?->id,
+                'user_id' => $employee?->user_id,
+                'recipient' => $email,
+                'mailable' => $mailable::class,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 }
