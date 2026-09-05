@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @include('partials.favicon')
     <title>Payslip - {{ $item->employee_name }} - {{ $payroll->month }}/{{ $payroll->year }}</title>
     <style>
         :root {

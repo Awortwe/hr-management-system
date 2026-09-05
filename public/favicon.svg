@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>PeopleHQ</title>
+  <rect width="64" height="64" rx="14" fill="#047857"/>
+  <g fill="#a7f3d0">
+    <circle cx="14" cy="27" r="5"/>
+    <circle cx="50" cy="27" r="5"/>
+    <path d="M5 45v-3a9 9 0 0 1 14-7 18 18 0 0 0-5 10H5Zm54 0v-3a9 9 0 0 0-14-7 18 18 0 0 1 5 10h9Z"/>
+  </g>
+  <g fill="#fff">
+    <circle cx="32" cy="23" r="8"/>
+    <path d="M19 49v-3a13 13 0 0 1 26 0v3H19Z"/>
+  </g>
+</svg>
