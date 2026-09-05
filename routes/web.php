@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LeaveTypeController;
@@ -8,20 +9,8 @@ use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\SelfServiceAttendanceController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'stack' => [
-            'Laravel 13',
-            'React 19',
-            'Inertia.js',
-            'Tailwind CSS 4',
-            'MySQL',
-            'Pest',
-        ],
-    ]);
-});
+Route::get('/', DashboardController::class)->name('dashboard');
 
 Route::middleware('role:admin,hr,manager')->prefix('staff')->name('staff.')->group(function (): void {
     Route::patch('/leave-requests/{leave_request}/approve', [LeaveRequestController::class, 'approve'])->name('leave-requests.approve');
