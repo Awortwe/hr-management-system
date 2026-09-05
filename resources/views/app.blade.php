@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         @include('partials.favicon')
 
-        <title inertia>{{ config('app.name', 'PeopleHQ') }}</title>
+        <title inertia>{{ $company->name }}</title>
 
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.jsx'])

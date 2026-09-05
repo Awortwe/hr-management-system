@@ -1,4 +1,6 @@
-import { Head, Link } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
+import Head from '../../Components/PageHead';
+import SearchBar from '../../Components/SearchBar';
 import AppLayout from '../../Layouts/AppLayout';
 import Avatar from '../../Components/Avatar';
 import type { Paginated } from '../../types';
@@ -6,13 +8,16 @@ import type { DirectoryMember } from '../SelfService/Profile';
 
 export default function Team({
     members,
+    filters,
 }: {
     members: Paginated<DirectoryMember> | null;
+    filters: { search: string };
 }) {
     return (
         <AppLayout>
             <Head title="My Team" />
             <h1 className="text-2xl font-semibold">My Team</h1>
+            <SearchBar href="/manager/team" filters={filters} />
             <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {members?.data.map((member) => (
                     <article
@@ -42,7 +47,7 @@ export default function Team({
             </div>
             {!members?.data.length && (
                 <p className="mt-6 text-zinc-500">
-                    No direct reports assigned yet.
+                    {filters.search ? 'No team members match your search.' : 'No direct reports assigned yet.'}
                 </p>
             )}
             <nav className="mt-6 flex justify-between">

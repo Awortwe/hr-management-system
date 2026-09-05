@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use App\Support\EmployeeSearch;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -34,11 +35,13 @@ class SelfServiceController extends Controller
 
     public function team(Request $request): Response
     {
+        $search = EmployeeSearch::term($request);
         $members = $request->user()->employee?->subordinates()
             ->with(['department:id,name', 'position:id,title'])
-            ->orderBy('first_name')->paginate(12)->through(fn (Employee $employee): array => $this->directoryRow($employee));
+            ->where(fn ($query) => EmployeeSearch::apply($query, $search))
+            ->orderBy('first_name')->orderBy('id')->paginate(12)->withQueryString()->through(fn (Employee $employee): array => $this->directoryRow($employee));
 
-        return Inertia::render('Manager/Team', ['members' => $members]);
+        return Inertia::render('Manager/Team', ['members' => $members, 'filters' => ['search' => $search]]);
     }
 
     private function directoryRow(Employee $employee): array

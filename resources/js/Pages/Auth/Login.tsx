@@ -1,7 +1,10 @@
-import { Head, useForm } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
+import Head from '../../Components/PageHead';
+import type { PageProps } from '../../types';
 import type { FormEvent } from 'react';
 
 export default function Login() {
+    const { company } = usePage<PageProps>().props;
     const form = useForm({ email: '', password: '', remember: false });
     function submit(event: FormEvent) {
         event.preventDefault();
@@ -11,7 +14,7 @@ export default function Login() {
         <main className="grid min-h-screen place-items-center bg-zinc-50 px-5 py-10 text-zinc-950">
             <Head title="Sign In" />
             <form className="w-full max-w-sm space-y-5" onSubmit={submit}>
-                <h1 className="text-3xl font-semibold">PeopleHQ</h1>
+                <h1 className="break-words text-3xl font-semibold">{company.name}</h1>
                 <p className="text-zinc-600">Sign in to your account</p>
                 <label className="block text-sm font-medium">
                     Email

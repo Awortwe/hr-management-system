@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\EmployeeSearch;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -11,10 +12,18 @@ use Inertia\Response;
 
 class UserController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $search = EmployeeSearch::term($request);
+
         return Inertia::render('Admin/Users', [
-            'users' => User::query()->select('id', 'name', 'email', 'role')->orderBy('name')->paginate(20),
+            'users' => User::query()->select('id', 'name', 'email', 'role')
+                ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search): void {
+                    EmployeeSearch::apply($query, $search, ['name', 'email']);
+                    $query->orWhereHas('employee', fn ($employee) => EmployeeSearch::apply($employee, $search));
+                }))
+                ->orderBy('name')->orderBy('id')->paginate(20)->withQueryString(),
+            'filters' => ['search' => $search],
             'roles' => ['admin', 'hr', 'manager', 'employee'],
         ]);
     }

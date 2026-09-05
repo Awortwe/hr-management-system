@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AttendanceRecord;
 use App\Models\Employee;
+use App\Support\EmployeeSearch;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -42,6 +43,7 @@ class SelfServiceAttendanceController extends Controller
 
     public function manager(Request $request): Response
     {
+        $search = EmployeeSearch::term($request);
         $attributes = $request->validate([
             'date' => ['nullable', 'date'],
         ]);
@@ -53,6 +55,7 @@ class SelfServiceAttendanceController extends Controller
         $companyWide = $request->user()->hasRole('admin', 'hr');
         $teamMembers = $companyWide || $manager
             ? ($companyWide ? Employee::query() : $manager->subordinates())
+                ->where(fn ($query) => EmployeeSearch::apply($query, $search))
                 ->with(['department:id,name', 'position:id,title'])
                 ->orderBy('first_name')
                 ->get()
@@ -86,6 +89,7 @@ class SelfServiceAttendanceController extends Controller
 
         return Inertia::render('Manager/Attendance/Index', [
             'companyWide' => $companyWide,
+            'filters' => ['search' => $search],
             'workDate' => $workDate,
             'rows' => $rows->values(),
             'summary' => [

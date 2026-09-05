@@ -1,9 +1,12 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
+import Head from '../../../Components/PageHead';
+import SearchBar from '../../../Components/SearchBar';
 import AppLayout from '../../../Layouts/AppLayout';
 import type { Payroll, PayrollItem } from '../../../types';
 
 type Props = {
     filters: {
+        search: string;
         month: number;
         year: number;
     };
@@ -90,7 +93,7 @@ export default function Index({ activeEmployeeCount, filters, items, months, pay
                         <div className="flex items-end">
                             <a
                                 className="w-full rounded-md border border-zinc-300 px-4 py-2 text-center text-sm font-semibold hover:bg-zinc-50"
-                                href={`/staff/payroll/export?month=${form.data.month}&year=${form.data.year}`}
+                                href={`/staff/payroll/export?month=${form.data.month}&year=${form.data.year}&search=${encodeURIComponent(filters.search)}`}
                             >
                                 Export CSV
                             </a>
@@ -106,6 +109,7 @@ export default function Index({ activeEmployeeCount, filters, items, months, pay
                     <Metric label="Net" value={money(payroll?.net_total)} />
                 </section>
 
+                <SearchBar href="/staff/payroll" filters={filters} label="Search employee, number, department, or position" />
                 <section className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
                     <div className="border-b border-zinc-200 px-4 py-3">
                         <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
@@ -155,7 +159,7 @@ export default function Index({ activeEmployeeCount, filters, items, months, pay
                                 {items.length === 0 && (
                                     <tr>
                                         <td className="px-4 py-8 text-center text-zinc-500" colSpan={7}>
-                                            No payslips exist for this month yet. Run payroll to generate them.
+                                            {filters.search ? 'No payslips match your search.' : 'No payslips exist for this month yet. Run payroll to generate them.'}
                                         </td>
                                     </tr>
                                 )}

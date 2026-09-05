@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LeaveType;
+use App\Support\EmployeeSearch;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -11,10 +12,14 @@ use Inertia\Response;
 
 class LeaveTypeController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $search = EmployeeSearch::term($request);
+
         return Inertia::render('Staff/LeaveTypes/Index', [
+            'filters' => ['search' => $search],
             'leaveTypes' => LeaveType::query()
+                ->where(fn ($query) => EmployeeSearch::apply($query, $search, ['name']))
                 ->withCount(['balances', 'requests'])
                 ->orderBy('name')
                 ->get(),

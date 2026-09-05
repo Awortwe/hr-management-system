@@ -1,4 +1,7 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
+import Head from '../../../Components/PageHead';
+import SearchBar from '../../../Components/SearchBar';
+import SearchableSelect from '../../../Components/SearchableSelect';
 import { useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import AppLayout from '../../../Layouts/AppLayout';
@@ -120,13 +123,7 @@ export default function Index({ departments, managers, filters }: Props) {
 
                 <section className="rounded-lg border border-zinc-200 bg-white p-4">
                     <div className="grid gap-3 md:grid-cols-[1fr_180px]">
-                        <input
-                            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                            onChange={(event) => updateFilters({ search: event.target.value })}
-                            placeholder="Search name, code, or description"
-                            type="search"
-                            value={filters.search}
-                        />
+                        <SearchBar className="" href="/organization/departments" filters={filters} label="Search name, code, or description" />
                         <select
                             className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                             onChange={(event) => updateFilters({ status: event.target.value })}
@@ -209,15 +206,9 @@ export default function Index({ departments, managers, filters }: Props) {
                             <Field error={form.errors.code} label="Code">
                                 <input className="form-input" onChange={(event) => form.setData('code', event.target.value.toUpperCase())} value={form.data.code} />
                             </Field>
-                            <Field error={form.errors.manager_id} label="Manager">
-                                <select className="form-input" onChange={(event) => form.setData('manager_id', event.target.value)} value={form.data.manager_id}>
-                                    <option value="">No manager</option>
-                                    {managers.map((manager) => (
-                                        <option key={manager.id} value={manager.id}>
-                                            {manager.full_name}
-                                        </option>
-                                    ))}
-                                </select>
+                            <Field group error={form.errors.manager_id} label="Manager">
+                                <SearchableSelect label="Manager" value={form.data.manager_id} onChange={value => form.setData('manager_id', value)} emptyLabel="No manager"
+                                    options={managers.map(manager => ({ value: String(manager.id), label: manager.full_name }))} />
                             </Field>
                             <Field error={form.errors.description} label="Description">
                                 <textarea className="form-input min-h-24" onChange={(event) => form.setData('description', event.target.value)} value={form.data.description} />
@@ -261,13 +252,14 @@ export default function Index({ departments, managers, filters }: Props) {
     );
 }
 
-function Field({ children, error, label }: { children: ReactNode; error?: string; label: string }) {
+function Field({ children, error, label, group = false }: { children: ReactNode; error?: string; label: string; group?: boolean }) {
+    const Tag = group ? 'div' : 'label';
     return (
-        <label className="block">
+        <Tag className="block">
             <span className="text-sm font-medium text-zinc-700">{label}</span>
             <div className="mt-1">{children}</div>
             {error && <p className="mt-1 text-xs font-medium text-rose-600">{error}</p>}
-        </label>
+        </Tag>
     );
 }
 

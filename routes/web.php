@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CompanySettingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
@@ -49,6 +50,8 @@ Route::middleware('auth')->group(function (): void {
     });
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function (): void {
+        Route::get('/company', [CompanySettingController::class, 'edit'])->name('company.edit');
+        Route::put('/company', [CompanySettingController::class, 'update'])->name('company.update');
         Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
     });
 

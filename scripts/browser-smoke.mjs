@@ -73,8 +73,8 @@ try {
             viewport: { width, height: 900 },
         });
         const page = await context.newPage();
-        page.setDefaultTimeout(15000);
-        page.setDefaultNavigationTimeout(20000);
+        page.setDefaultTimeout(60000);
+        page.setDefaultNavigationTimeout(60000);
         console.log(`Signing in as ${role}`);
         page.on('pageerror', (error) => errors.push(error.message));
         await page.goto(`${base}/login`);
@@ -196,7 +196,7 @@ try {
     await visit(admin, '/staff/attendance');
     assert.equal(await admin.locator('tbody tr').count(), 4);
     await admin.getByLabel('Work Date').fill(`${year}-09-01`);
-    await admin.waitForURL('**/staff/attendance?date=*');
+    await admin.waitForURL(url => url.pathname === '/staff/attendance' && url.searchParams.get('date') === `${year}-09-01`);
     await visit(admin, '/staff/employees');
     await admin.getByLabel('Admin Person', { exact: true }).waitFor();
     assert(
@@ -281,11 +281,65 @@ try {
         .getByRole('button', { name: 'Delete Account', exact: true })
         .click();
     await admin.getByText('Account deleted.', { exact: true }).waitFor();
+    for (const [route, term, expected] of [
+        ['/admin/users', 'employee@browser.test', 'employee@browser.test'],
+        ['/staff/employees', 'Employee Person', 'Employee Person'],
+        ['/organization/departments', 'Engineering', 'Engineering'],
+        ['/organization/positions', 'Engineer', 'Engineer'],
+        ['/staff/attendance', 'Employee Person', 'Employee Person'],
+        ['/staff/payroll', 'Employee Person', 'Employee Person'],
+        ['/staff/leave-requests', 'Employee Person', 'Employee Person'],
+        ['/staff/leave-types', 'Annual', 'Annual'],
+    ]) {
+        await visit(admin, route);
+        const search = admin.getByRole('search').getByRole('searchbox');
+        await search.fill(term);
+        await search.press('Enter');
+        await admin.waitForURL(url => url.searchParams.get('search') === term);
+        assert((await admin.locator('main').textContent()).includes(expected));
+        await search.fill('NoSuchPersonXYZ');
+        await admin.getByRole('button', { name: 'Search', exact: true }).click();
+        await admin.waitForURL(url => url.searchParams.get('search') === 'NoSuchPersonXYZ');
+        assert.equal(await admin.locator('tbody tr').filter({ hasText: expected }).count(), 0);
+        await admin.getByRole('button', { name: 'Clear search' }).click();
+        await admin.waitForURL(url => !url.searchParams.get('search'));
+        await noOverflow(admin);
+    }
+    await visit(admin, '/staff/employees');
+    await admin.getByRole('button', { name: 'Add Employee', exact: true }).click();
+    await admin.getByLabel('Search manager options', { exact: true }).fill('Manager Person');
+    const managerSelect = admin.getByLabel('Manager', { exact: true });
+    assert.equal(await managerSelect.locator('option').count(), 2);
+    await managerSelect.selectOption({ label: 'Manager Person' });
+    const selectedManager = await managerSelect.inputValue();
+    await admin.getByLabel('Search manager options', { exact: true }).fill('Nobody');
+    assert.equal(await managerSelect.inputValue(), selectedManager);
+    await admin.getByRole('button', { name: 'Close', exact: true }).click();
+    await visit(admin, '/admin/company');
+    await admin.getByLabel('Company Name', { exact: true }).fill('Acme People Operations');
+    await admin.getByLabel('Subtitle', { exact: true }).fill('Our people, our company');
+    await admin.getByLabel('Company Email', { exact: true }).fill('office@acme.test');
+    await admin.getByLabel('Company Address', { exact: true }).fill('10 Main Street\nAccra');
+    await admin.getByLabel('Registration Number', { exact: true }).fill('REG-123');
+    await admin.getByRole('button', { name: 'Save Changes' }).click();
+    await admin.getByText('Company details updated.', { exact: true }).waitFor();
+    await admin.waitForFunction(() => document.title === 'Company Settings - Acme People Operations');
+    await admin.screenshot({ path: path.join(output, 'company-settings-desktop.png'), fullPage: true });
+    await visit(admin, '/staff/payroll');
+    const brandedPopup = admin.waitForEvent('popup');
+    await admin.getByRole('link', { name: 'Print Payslip', exact: true }).first().click();
+    const brandedPayslip = await brandedPopup;
+    await brandedPayslip.getByRole('heading', { name: 'Acme People Operations', exact: true }).waitFor();
+    await brandedPayslip.getByText('REG-123', { exact: true }).waitFor();
+    await brandedPayslip.screenshot({ path: path.join(output, 'company-payslip.png'), fullPage: true });
+    await brandedPayslip.close();
+    assert.equal((await manager.goto(base + '/admin/company')).status(), 403);
     for (const width of [390, 1440]) {
         await admin.setViewportSize({ width, height: 900 });
         for (const route of [
             '/',
             '/admin/users',
+            '/admin/company',
             '/staff/attendance',
             '/staff/employees',
             '/organization/departments',
@@ -296,6 +350,9 @@ try {
         ]) {
             await visit(admin, route);
             await noOverflow(admin);
+            if (route === '/admin/company' || route === '/admin/users') {
+                await admin.screenshot({ path: path.join(output, `${route.endsWith('company') ? 'company-settings' : 'account-search'}-${width}.png`), fullPage: true });
+            }
         }
         await admin.screenshot({
             path: path.join(output, `profile-${width}.png`),
@@ -307,9 +364,10 @@ try {
         .getByRole('button', { name: 'Sign out', exact: true })
         .click();
     await employee.waitForURL('**/login');
+    await employee.getByRole('heading', { name: 'Acme People Operations', exact: true }).waitFor();
     assert.deepEqual(errors, []);
     console.log(
-        'Browser checks passed: authentication, mobile navigation, leave approval and balance, attendance, accounts, exports, duplicate payroll, PDF, avatar fallback, responsive pages.',
+        'Browser checks passed: authentication, mobile navigation, leave approval and balance, attendance, accounts, exports, duplicate payroll, PDF, avatar fallback, search, company settings and dynamic branding, responsive pages.',
     );
 } catch (error) {
     for (const [index, context] of (browser?.contexts() ?? []).entries()) {

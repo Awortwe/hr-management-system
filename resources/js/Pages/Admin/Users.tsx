@@ -1,4 +1,6 @@
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { Link, router, useForm, usePage } from '@inertiajs/react';
+import Head from '../../Components/PageHead';
+import SearchBar from '../../Components/SearchBar';
 import { Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
@@ -8,9 +10,11 @@ import type { Paginated, PageProps, Role, User } from '../../types';
 export default function Users({
     users,
     roles,
+    filters,
 }: {
     users: Paginated<User>;
     roles: Role[];
+    filters: { search: string };
 }) {
     const { auth } = usePage<PageProps>().props;
     const [editing, setEditing] = useState<User | null>(null);
@@ -61,6 +65,8 @@ export default function Users({
                     <Plus size={20} />
                 </button>
             </div>
+            <SearchBar href="/admin/users" filters={filters} label="Search name, email, or employee number" />
+            <p className="text-sm text-zinc-500">{users.total} accounts</p>
             <div className="mt-6 overflow-x-auto">
                 <table className="w-full text-left text-sm">
                     <thead>
@@ -75,6 +81,7 @@ export default function Users({
                         </tr>
                     </thead>
                     <tbody>
+                        {users.data.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-zinc-500">No accounts match your search.</td></tr>}
                         {users.data.map((user) => (
                             <tr
                                 className="border-t border-zinc-200"

@@ -1,4 +1,6 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
+import Head from '../../../Components/PageHead';
+import SearchBar from '../../../Components/SearchBar';
 import { useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import AppLayout from '../../../Layouts/AppLayout';
@@ -120,13 +122,7 @@ export default function Index({ positions, departments, filters }: Props) {
 
                 <section className="rounded-lg border border-zinc-200 bg-white p-4">
                     <div className="grid gap-3 md:grid-cols-[1fr_220px_180px]">
-                        <input
-                            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                            onChange={(event) => updateFilters({ search: event.target.value })}
-                            placeholder="Search title, code, or description"
-                            type="search"
-                            value={filters.search}
-                        />
+                        <SearchBar className="" href="/organization/positions" filters={filters} label="Search title, code, or description" />
                         <select
                             className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                             onChange={(event) => updateFilters({ department: event.target.value })}

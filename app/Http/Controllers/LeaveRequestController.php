@@ -7,6 +7,7 @@ use App\Models\LeaveBalance;
 use App\Models\LeaveRequest;
 use App\Models\LeaveType;
 use App\Models\User;
+use App\Support\EmployeeSearch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,8 +22,10 @@ class LeaveRequestController extends Controller
     public function index(Request $request): Response
     {
         $filters = $request->only(['status', 'employee']);
+        $search = EmployeeSearch::term($request);
 
         $leaveRequests = LeaveRequest::query()
+            ->when($search !== '', fn ($query) => $query->whereHas('employee', fn ($employee) => EmployeeSearch::apply($employee, $search)))
             ->whereIn('employee_id', $this->visibleEmployees($request)->select('id'))
             ->with([
                 'employee:id,employee_number,first_name,middle_name,last_name,manager_id,department_id,position_id',
@@ -55,11 +58,14 @@ class LeaveRequestController extends Controller
                 ->orderBy('name')
                 ->get(),
             'filters' => [
+                'search' => $search,
                 'status' => $filters['status'] ?? '',
                 'employee' => $filters['employee'] ?? '',
             ],
             'statuses' => ['pending', 'approved', 'rejected'],
             'balances' => LeaveBalance::query()
+                ->when($search !== '', fn ($query) => $query->whereHas('employee', fn ($employee) => EmployeeSearch::apply($employee, $search)))
+                ->when($filters['employee'] ?? null, fn ($query, string $id) => $query->where('employee_id', $id))
                 ->whereIn('employee_id', $this->visibleEmployees($request)->select('id'))
                 ->where('year', now()->year)
                 ->with(['employee', 'leaveType'])

@@ -1,4 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
+import Head from '../Components/PageHead';
 import type { ReactNode } from 'react';
 import AppLayout from '../Layouts/AppLayout';
 

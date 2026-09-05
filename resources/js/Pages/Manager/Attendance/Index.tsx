@@ -1,18 +1,21 @@
-import { Head, router } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
+import Head from '../../../Components/PageHead';
+import SearchBar from '../../../Components/SearchBar';
 import AppLayout from '../../../Layouts/AppLayout';
 import type { AttendanceOverviewRow, AttendanceSummary } from '../../../types';
 
 type Props = {
+    filters: { search: string };
     companyWide: boolean;
     workDate: string;
     rows: AttendanceOverviewRow[];
     summary: AttendanceSummary;
 };
 
-export default function Index({ workDate, rows, summary, companyWide }: Props) {
+export default function Index({ workDate, rows, summary, companyWide, filters }: Props) {
     const title = companyWide ? 'Company Attendance' : 'Team Attendance';
     function updateDate(date: string) {
-        router.get(companyWide ? '/staff/attendance' : '/manager/attendance', { date }, {
+        router.get(companyWide ? '/staff/attendance' : '/manager/attendance', { ...filters, date }, {
             preserveScroll: true,
             preserveState: true,
             replace: true,
@@ -39,6 +42,7 @@ export default function Index({ workDate, rows, summary, companyWide }: Props) {
                     </label>
                 </div>
 
+                <SearchBar href={companyWide ? '/staff/attendance' : '/manager/attendance'} filters={{ ...filters, date: workDate }} />
                 <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
                     <Metric label="Expected" value={summary.expected} />
                     <Metric label="Present" value={summary.present} tone="emerald" />

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CompanySetting;
 use App\Models\Employee;
 use App\Models\Payroll;
 use App\Models\PayrollItem;
 use App\Support\CsvExporter;
+use App\Support\EmployeeSearch;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +20,7 @@ class PayrollController extends Controller
 {
     public function index(Request $request): Response
     {
+        $search = EmployeeSearch::term($request);
         $filters = $request->validate([
             'month' => ['nullable', 'integer', 'between:1,12'],
             'year' => ['nullable', 'integer', 'between:2000,2100'],
@@ -32,12 +35,14 @@ class PayrollController extends Controller
 
         return Inertia::render('Staff/Payroll/Index', [
             'filters' => [
+                'search' => $search,
                 'month' => $month,
                 'year' => $year,
             ],
             'payroll' => $payroll ? $this->payrollRow($payroll) : null,
             'items' => $payroll
                 ? $payroll->items()
+                    ->where(fn ($query) => EmployeeSearch::apply($query, $search, ['employee_name', 'employee_number', 'department_name', 'position_title']))
                     ->orderBy('employee_name')
                     ->get()
                     ->map(fn (PayrollItem $item): array => $this->payrollItemRow($item))
@@ -145,19 +150,21 @@ class PayrollController extends Controller
 
     public function export(Request $request): StreamedResponse
     {
+        $search = EmployeeSearch::term($request);
         $attributes = $request->validate([
             'month' => ['required', 'integer', 'between:1,12'],
             'year' => ['required', 'integer', 'between:2000,2100'],
         ]);
 
         $query = PayrollItem::query()
+            ->where(fn ($query) => EmployeeSearch::apply($query, $search, ['employee_name', 'employee_number', 'department_name', 'position_title']))
             ->whereHas('payroll', fn ($query): mixed => $query
                 ->where('month', $attributes['month'])
                 ->where('year', $attributes['year']))
             ->orderBy('employee_name');
 
         return CsvExporter::streamCsv(
-            "peoplehq-payroll-{$attributes['year']}-{$attributes['month']}.csv",
+            CompanySetting::exportPrefix()."-payroll-{$attributes['year']}-{$attributes['month']}.csv",
             ['Employee Number', 'Name', 'Department', 'Position', 'Basic Salary', 'Allowances', 'Gross Pay', 'Deductions', 'Net Pay', 'Currency'],
             $query,
             fn (PayrollItem $item): array => [

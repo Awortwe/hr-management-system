@@ -1,4 +1,7 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
+import Head from '../../../Components/PageHead';
+import SearchBar from '../../../Components/SearchBar';
+import SearchableSelect from '../../../Components/SearchableSelect';
 import { useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import AppLayout from '../../../Layouts/AppLayout';
@@ -10,6 +13,7 @@ type Props = {
     employees: Pick<Employee, 'id' | 'employee_number' | 'full_name'>[];
     leaveTypes: LeaveType[];
     filters: {
+        search: string;
         status: string;
         employee: string;
     };
@@ -139,6 +143,7 @@ export default function Index({ leaveRequests, employees, leaveTypes, filters, s
                     </button>
                 </div>
 
+                <SearchBar href="/staff/leave-requests" filters={filters} />
                 <section className="grid gap-3 sm:grid-cols-3">
                     <Metric label="Pending" tone="amber" value={String(totals.pending)} />
                     <Metric label="Approved" tone="emerald" value={String(totals.approved)} />
@@ -161,14 +166,8 @@ export default function Index({ leaveRequests, employees, leaveTypes, filters, s
                                 </option>
                             ))}
                         </select>
-                        <select className="form-input" onChange={(event) => updateFilters({ employee: event.target.value })} value={filters.employee}>
-                            <option value="">All employees</option>
-                            {employees.map((employee) => (
-                                <option key={employee.id} value={employee.id}>
-                                    {employee.full_name} ({employee.employee_number})
-                                </option>
-                            ))}
-                        </select>
+                        <SearchableSelect label="Employee filter" value={filters.employee} onChange={value => updateFilters({ employee: value })} emptyLabel="All employees"
+                            options={employees.map(employee => ({ value: String(employee.id), label: `${employee.full_name} (${employee.employee_number})` }))} />
                     </div>
                 </section>
 
@@ -245,15 +244,9 @@ export default function Index({ leaveRequests, employees, leaveTypes, filters, s
             {requestDialogOpen && (
                 <Modal title="New Leave Request" onClose={() => setRequestDialogOpen(false)}>
                     <form className="space-y-4" onSubmit={submitRequest}>
-                        <Field error={requestForm.errors.employee_id} label="Employee">
-                            <select className="form-input" onChange={(event) => requestForm.setData('employee_id', event.target.value)} value={requestForm.data.employee_id}>
-                                <option value="">Select employee</option>
-                                {employees.map((employee) => (
-                                    <option key={employee.id} value={employee.id}>
-                                        {employee.full_name} ({employee.employee_number})
-                                    </option>
-                                ))}
-                            </select>
+                        <Field group error={requestForm.errors.employee_id} label="Employee">
+                            <SearchableSelect label="Employee" value={requestForm.data.employee_id} onChange={value => requestForm.setData('employee_id', value)} emptyLabel="Select employee"
+                                options={employees.map(employee => ({ value: String(employee.id), label: `${employee.full_name} (${employee.employee_number})` }))} />
                         </Field>
                         <Field error={requestForm.errors.leave_type_id} label="Leave Type">
                             <select className="form-input" onChange={(event) => requestForm.setData('leave_type_id', event.target.value)} value={requestForm.data.leave_type_id}>
@@ -324,13 +317,14 @@ function Modal({ children, onClose, title }: { children: ReactNode; onClose: () 
     );
 }
 
-function Field({ children, error, label }: { children: ReactNode; error?: string; label: string }) {
+function Field({ children, error, label, group = false }: { children: ReactNode; error?: string; label: string; group?: boolean }) {
+    const Tag = group ? 'div' : 'label';
     return (
-        <label className="block">
+        <Tag className="block">
             <span className="text-sm font-medium text-zinc-700">{label}</span>
             <div className="mt-1">{children}</div>
             {error && <p className="mt-1 text-xs font-medium text-rose-600">{error}</p>}
-        </label>
+        </Tag>
     );
 }
 

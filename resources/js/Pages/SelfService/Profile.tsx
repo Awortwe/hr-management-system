@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import Head from '../../Components/PageHead';
 import AppLayout from '../../Layouts/AppLayout';
 import Avatar from '../../Components/Avatar';
 

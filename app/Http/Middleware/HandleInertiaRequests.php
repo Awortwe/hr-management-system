@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\CompanySetting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -13,6 +14,7 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            'company' => fn () => CompanySetting::current()->only(['name', 'tagline']),
             'auth' => [
                 'user' => $request->user(),
             ],

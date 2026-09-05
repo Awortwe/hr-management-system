@@ -1,6 +1,6 @@
 # PeopleHQ HR Management System
 
-PeopleHQ is a browser-based HR management system built with Laravel 13, React 19, Inertia.js 3, Tailwind CSS 4, and MySQL. It includes session authentication, four roles, employee records and photos, departments and positions, leave approvals and balances, personal and company attendance, payroll, printable payslips, dashboards, and CSV exports. Notifications, calendars, settings, and audit history remain future enhancements.
+PeopleHQ is a browser-based HR management system built with Laravel 13, React 19, Inertia.js 3, Tailwind CSS 4, and MySQL. It includes session authentication, four roles, employee records and photos, departments and positions, leave approvals and balances, personal and company attendance, payroll, printable payslips, dashboards, CSV exports, searchable lists, and company settings. Notifications, calendars, and audit history remain future enhancements.
 
 ## Completed Workflows
 
@@ -11,6 +11,19 @@ The [Word user guide](docs/PeopleHQ_Application_User_Guide.docx) explains local 
 - Employees have a personal home, profile and balances, clock-in/out, and their own leave requests.
 - Admins can create, edit, and delete login accounts. Employee records can be linked to those accounts through the employee form.
 - All HR routes require a session. Sign-in is throttled; logout invalidates the session. Navigation works on mobile and desktop.
+
+## Search and Company Settings
+
+Search is available on user accounts, employees, departments, positions, leave types, leave requests/balances, payroll, company/team attendance, and the manager's team directory. Enter a term and press Enter or the search icon; the clear icon restores the list. Employee searches support full names, employee numbers, and work emails. Existing status, department, date, and payroll-period filters remain active. Searches do not expand role permissions, and CSV exports honor the applied employee/payroll search. Employee/account/manager selectors inside forms also have a search field.
+
+Apply the additive migration manually before saving company details (do not use `migrate:fresh` on an existing installation):
+
+```powershell
+.\scripts\artisan.ps1 -ArtisanArguments @('migrate')
+npm run build
+```
+
+Sign in as an admin and open **Company Settings** (`/admin/company`). Update the company name, subtitle, email, phone, website, address, and registration number, then save. Branding updates on subsequent page loads/navigation, including the login page, headers, sidebar, browser titles, CSV filenames, and printable payslips. Contact and registration details appear on payslips; only the public name/subtitle are shared with the login screen. Existing payslips use current company details when reopened; employee salary snapshots are unchanged. Before the migration is applied, existing pages retain default branding and the settings form cannot be saved.
 
 ## Verification
 

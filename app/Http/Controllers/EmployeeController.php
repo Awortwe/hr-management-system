@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CompanySetting;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Position;
 use App\Models\User;
 use App\Support\CsvExporter;
+use App\Support\EmployeeSearch;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -21,6 +23,7 @@ class EmployeeController extends Controller
     public function index(Request $request): Response
     {
         $filters = $request->only(['search', 'department', 'status']);
+        $filters['search'] = EmployeeSearch::term($request);
 
         $employees = Employee::query()
             ->with([
@@ -30,16 +33,7 @@ class EmployeeController extends Controller
                 'user:id,name,email,role',
             ])
             ->withCount(['attendanceRecords', 'leaveRequests', 'payrollItems'])
-            ->when($filters['search'] ?? null, function ($query, string $search): void {
-                $query->where(function ($query) use ($search): void {
-                    $query->where('employee_number', 'like', "%{$search}%")
-                        ->orWhere('first_name', 'like', "%{$search}%")
-                        ->orWhere('middle_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%")
-                        ->orWhere('work_email', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%");
-                });
-            })
+            ->where(fn ($query) => EmployeeSearch::apply($query, $filters['search'], ['employee_number', 'first_name', 'middle_name', 'last_name', 'work_email', 'phone']))
             ->when($filters['department'] ?? null, fn ($query, string $departmentId): mixed => $query->where('department_id', $departmentId))
             ->when($filters['status'] ?? null, fn ($query, string $status): mixed => $query->where('status', $status))
             ->latest()
@@ -136,24 +130,16 @@ class EmployeeController extends Controller
     public function export(Request $request): StreamedResponse
     {
         $filters = $request->only(['search', 'department', 'status']);
+        $filters['search'] = EmployeeSearch::term($request);
         $query = Employee::query()
             ->with(['department:id,name', 'position:id,title', 'manager:id,first_name,middle_name,last_name'])
-            ->when($filters['search'] ?? null, function ($query, string $search): void {
-                $query->where(function ($query) use ($search): void {
-                    $query->where('employee_number', 'like', "%{$search}%")
-                        ->orWhere('first_name', 'like', "%{$search}%")
-                        ->orWhere('middle_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%")
-                        ->orWhere('work_email', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%");
-                });
-            })
+            ->where(fn ($query) => EmployeeSearch::apply($query, $filters['search'], ['employee_number', 'first_name', 'middle_name', 'last_name', 'work_email', 'phone']))
             ->when($filters['department'] ?? null, fn ($query, string $departmentId): mixed => $query->where('department_id', $departmentId))
             ->when($filters['status'] ?? null, fn ($query, string $status): mixed => $query->where('status', $status))
             ->orderBy('employee_number');
 
         return CsvExporter::streamCsv(
-            'peoplehq-employees.csv',
+            CompanySetting::exportPrefix().'-employees.csv',
             ['Employee Number', 'Name', 'Department', 'Position', 'Manager', 'Work Email', 'Phone', 'Status', 'Hire Date'],
             $query,
             fn (Employee $employee): array => [

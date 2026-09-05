@@ -242,6 +242,7 @@ export type Paginated<T> = {
 };
 
 export type PageProps = {
+    company: Pick<CompanySettings, 'name' | 'tagline'>;
     auth: {
         user: User | null;
     };
@@ -249,4 +250,14 @@ export type PageProps = {
         success?: string | null;
         error?: string | null;
     };
+};
+
+export type CompanySettings = {
+    name: string;
+    tagline: string | null;
+    email: string | null;
+    phone: string | null;
+    website: string | null;
+    address: string | null;
+    registration_number: string | null;
 };

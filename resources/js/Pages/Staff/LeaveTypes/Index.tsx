@@ -1,10 +1,13 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
+import Head from '../../../Components/PageHead';
+import SearchBar from '../../../Components/SearchBar';
 import { useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import AppLayout from '../../../Layouts/AppLayout';
 import type { LeaveType } from '../../../types';
 
 type Props = {
+    filters: { search: string };
     leaveTypes: LeaveType[];
 };
 
@@ -24,7 +27,7 @@ const emptyForm: LeaveTypeForm = {
     is_active: true,
 };
 
-export default function Index({ leaveTypes }: Props) {
+export default function Index({ leaveTypes, filters }: Props) {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<LeaveType | null>(null);
     const [deleting, setDeleting] = useState<LeaveType | null>(null);
@@ -106,6 +109,7 @@ export default function Index({ leaveTypes }: Props) {
                     </button>
                 </div>
 
+                <SearchBar href="/staff/leave-types" filters={filters} label="Search leave types" />
                 <section className="grid gap-3 sm:grid-cols-3">
                     <Metric label="Leave Types" value={String(leaveTypes.length)} />
                     <Metric label="Active" value={String(activeCount)} />

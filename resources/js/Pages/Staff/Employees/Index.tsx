@@ -1,4 +1,7 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
+import Head from '../../../Components/PageHead';
+import SearchBar from '../../../Components/SearchBar';
+import SearchableSelect from '../../../Components/SearchableSelect';
 import { useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import AppLayout from '../../../Layouts/AppLayout';
@@ -232,13 +235,7 @@ export default function Index({ employees, departments, positions, managers, use
 
                 <section className="rounded-lg border border-zinc-200 bg-white p-4">
                     <div className="grid gap-3 md:grid-cols-[1fr_220px_180px]">
-                        <input
-                            className="form-input"
-                            onChange={(event) => updateFilters({ search: event.target.value })}
-                            placeholder="Search name, number, email, or phone"
-                            type="search"
-                            value={filters.search}
-                        />
+                        <SearchBar className="" href="/staff/employees" filters={filters} label="Search name, number, email, or phone" />
                         <select className="form-input" onChange={(event) => updateFilters({ department: event.target.value })} value={filters.department}>
                             <option value="">All departments</option>
                             {departments.map((department) => (
@@ -324,20 +321,9 @@ export default function Index({ employees, departments, positions, managers, use
                                 <Field error={form.errors.employee_number} label="Employee Number">
                                     <input className="form-input" onChange={(event) => form.setData('employee_number', event.target.value.toUpperCase())} value={form.data.employee_number} />
                                 </Field>
-                                <Field error={form.errors.user_id} label="User Account">
-                                    <select className="form-input" onChange={(event) => form.setData('user_id', event.target.value)} value={form.data.user_id}>
-                                        <option value="">No login account</option>
-                                        {editing?.user && (
-                                            <option value={editing.user.id}>
-                                                {editing.user.name} ({editing.user.email})
-                                            </option>
-                                        )}
-                                        {users.map((user) => (
-                                            <option key={user.id} value={user.id}>
-                                                {user.name} ({user.role})
-                                            </option>
-                                        ))}
-                                    </select>
+                                <Field group error={form.errors.user_id} label="User Account">
+                                    <SearchableSelect label="User Account" value={form.data.user_id} onChange={value => form.setData('user_id', value)} emptyLabel="No login account"
+                                        options={[...(editing?.user ? [editing.user] : []), ...users.filter(user => user.id !== editing?.user?.id)].map(user => ({ value: String(user.id), label: `${user.name} (${user.email}) - ${user.role}` }))} />
                                 </Field>
                                 <Field error={form.errors.status} label="Status">
                                     <select className="form-input" onChange={(event) => form.setData('status', event.target.value)} value={form.data.status}>
@@ -383,17 +369,9 @@ export default function Index({ employees, departments, positions, managers, use
                                         ))}
                                     </select>
                                 </Field>
-                                <Field error={form.errors.manager_id} label="Manager">
-                                    <select className="form-input" onChange={(event) => form.setData('manager_id', event.target.value)} value={form.data.manager_id}>
-                                        <option value="">No manager</option>
-                                        {managers
-                                            .filter((manager) => manager.id !== editing?.id)
-                                            .map((manager) => (
-                                                <option key={manager.id} value={manager.id}>
-                                                    {manager.full_name}
-                                                </option>
-                                            ))}
-                                    </select>
+                                <Field group error={form.errors.manager_id} label="Manager">
+                                    <SearchableSelect label="Manager" value={form.data.manager_id} onChange={value => form.setData('manager_id', value)} emptyLabel="No manager"
+                                        options={managers.filter(manager => manager.id !== editing?.id).map(manager => ({ value: String(manager.id), label: manager.full_name }))} />
                                 </Field>
                             </div>
 
@@ -492,13 +470,14 @@ function Avatar({ employee, size = 'md' }: { employee: Employee; size?: 'md' | '
     return <SafeAvatar name={employee.full_name} src={employee.avatar_url} className={classes} />;
 }
 
-function Field({ children, error, label }: { children: ReactNode; error?: string; label: string }) {
+function Field({ children, error, label, group = false }: { children: ReactNode; error?: string; label: string; group?: boolean }) {
+    const Tag = group ? 'div' : 'label';
     return (
-        <label className="block">
+        <Tag className="block">
             <span className="text-sm font-medium text-zinc-700">{label}</span>
             <div className="mt-1">{children}</div>
             {error && <p className="mt-1 text-xs font-medium text-rose-600">{error}</p>}
-        </label>
+        </Tag>
     );
 }
 

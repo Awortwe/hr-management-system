@@ -22,6 +22,7 @@ const navItems: NavItem[] = [
     { label: 'Company Attendance', href: '/staff/attendance', roles: ['admin', 'hr'] },
     { label: 'My Team', href: '/manager/team', roles: ['manager'] },
     { label: 'User Accounts', href: '/admin/users', roles: ['admin'] },
+    { label: 'Company Settings', href: '/admin/company', roles: ['admin'] },
     { label: 'My Profile', href: '/self-service/profile', roles: ['admin', 'hr', 'manager', 'employee'] },
     { label: 'My Attendance', href: '/self-service/attendance', roles: ['admin', 'hr', 'manager', 'employee'] },
 ];
@@ -31,7 +32,7 @@ function canSee(roles: Role[], role?: Role) {
 }
 
 export default function AppLayout({ children }: PropsWithChildren) {
-    const { auth, flash } = usePage<PageProps>().props;
+    const { auth, flash, company } = usePage<PageProps>().props;
     const [menuOpen, setMenuOpen] = useState(false);
     const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -59,10 +60,10 @@ export default function AppLayout({ children }: PropsWithChildren) {
 
     return (
         <div className="min-h-screen bg-zinc-50 text-zinc-950">
-            <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-zinc-200 bg-white px-4 py-5 lg:block">
+            <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col overflow-y-auto border-r border-zinc-200 bg-white px-4 py-5 lg:flex">
                 <Link href="/" className="block">
-                    <p className="text-lg font-semibold">PeopleHQ</p>
-                    <p className="mt-1 text-xs font-medium uppercase tracking-wide text-zinc-500">HR Management</p>
+                    <p className="break-words text-lg font-semibold">{company.name}</p>
+                    <p className="mt-1 break-words text-xs font-medium text-zinc-500">{company.tagline}</p>
                 </Link>
 
                 <nav className="mt-8 space-y-1">
@@ -78,7 +79,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
                 </nav>
 
                 {auth.user && (
-                    <div className="absolute inset-x-4 bottom-5 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                    <div className="mt-6 break-words rounded-lg border border-zinc-200 bg-zinc-50 p-3">
                         <p className="text-sm font-semibold">{auth.user.name}</p>
                         <p className="mt-1 text-xs uppercase tracking-wide text-zinc-500">{auth.user.role}</p>
                     </div>
@@ -88,7 +89,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
             <div className="lg:pl-64">
                 <header className="border-b border-zinc-200 bg-white px-5 py-4 lg:px-8">
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-3"><button type="button" className="rounded-md p-2 lg:hidden" aria-label={menuOpen ? 'Close navigation' : 'Open navigation'} title={menuOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={20} /> : <Menu size={20} />}</button><p className="text-sm font-semibold text-zinc-700">PeopleHQ</p></div>
+                        <div className="flex min-w-0 items-center gap-3"><button type="button" className="shrink-0 rounded-md p-2 lg:hidden" aria-label={menuOpen ? 'Close navigation' : 'Open navigation'} title={menuOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={20} /> : <Menu size={20} />}</button><p className="min-w-0 break-words text-sm font-semibold text-zinc-700">{company.name}</p></div>
                         <p className="flex min-w-0 items-center gap-3 break-all text-sm text-zinc-500">
                             {auth.user ? `${auth.user.email}` : 'Guest session'}
                             {auth.user && <Link href="/logout" method="post" as="button" className="shrink-0 rounded-md p-2" aria-label="Sign out" title="Sign out"><LogOut size={18} /></Link>}

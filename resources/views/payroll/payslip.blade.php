@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @include('partials.favicon')
-    <title>Payslip - {{ $item->employee_name }} - {{ $payroll->month }}/{{ $payroll->year }}</title>
+    <title>Payslip - {{ $item->employee_name }} - {{ $payroll->month }}/{{ $payroll->year }} - {{ $company->name }}</title>
     <style>
         :root {
             color: #18181b;
@@ -31,12 +31,15 @@
         }
 
         .header {
+            gap: 20px;
             align-items: flex-start;
             border-bottom: 2px solid #18181b;
             display: flex;
             justify-content: space-between;
             padding-bottom: 20px;
         }
+
+        .header > div { min-width: 0; }
 
         h1,
         h2,
@@ -148,8 +151,12 @@
     <main class="payslip">
         <section class="header">
             <div>
-                <h1>PeopleHQ</h1>
+                <h1 style="overflow-wrap: anywhere">{{ $company->name }}</h1>
                 <p class="muted">Employee Payslip</p>
+                @if($company->address)<p class="muted" style="white-space: pre-line; overflow-wrap: anywhere">{{ $company->address }}</p>@endif
+                @foreach(['email', 'phone', 'website', 'registration_number'] as $field)
+                    @if($company->$field)<p class="muted" style="overflow-wrap: anywhere">{{ $company->$field }}</p>@endif
+                @endforeach
             </div>
             <div class="period">
                 <h2>{{ DateTime::createFromFormat('!m', $payroll->month)->format('F') }} {{ $payroll->year }}</h2>

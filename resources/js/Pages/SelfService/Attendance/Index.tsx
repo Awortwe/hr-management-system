@@ -1,4 +1,5 @@
-import { Head, useForm } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
+import Head from '../../../Components/PageHead';
 import AppLayout from '../../../Layouts/AppLayout';
 import SafeAvatar from '../../../Components/Avatar';
 import type { AttendanceRecord, Department, Employee, Position } from '../../../types';

@@ -1,4 +1,5 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
+import Head from '../../Components/PageHead';
 import AppLayout from '../../Layouts/AppLayout';
 import type { PageProps } from '../../types';
 
