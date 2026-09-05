@@ -66,6 +66,7 @@ it('renders payroll items in inertia and opens a blade payslip document', functi
     $employee = payrollEmployee([
         'employee_number' => 'PHQ-2001',
         'first_name' => 'Kojo',
+        'middle_name' => null,
         'last_name' => 'Owusu',
     ]);
     $payroll = Payroll::factory()->create([

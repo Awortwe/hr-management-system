@@ -27,7 +27,7 @@ Sign in as an admin and open **Company Settings** (`/admin/company`). Update the
 
 ## Email Notifications
 
-The application sends employee emails from `info@hr-manager.pankhost.com` for new account credentials, salary payment notices, attendance clock-in/out confirmations, leave request submissions, and leave approval/rejection updates. Keep private SMTP credentials in your local `.env` file only:
+The application sends employee emails from `info@hr-manager.pankhost.com` for new account credentials, salary payment notices, attendance clock-in/out confirmations, leave request submissions, and leave approval/rejection updates. Employee notifications use the employee's work email first, then personal email, and skip reserved demo addresses such as `.test` or `example.org`. Keep private SMTP credentials in your local `.env` file only:
 
 ```env
 MAIL_MAILER=smtp
@@ -35,7 +35,7 @@ MAIL_HOST=your-smtp-host
 MAIL_PORT=587
 MAIL_USERNAME=info@hr-manager.pankhost.com
 MAIL_PASSWORD=your-app-password-or-smtp-password
-MAIL_SCHEME=tls
+MAIL_SCHEME=smtp
 MAIL_FROM_ADDRESS="info@hr-manager.pankhost.com"
 MAIL_FROM_NAME="${APP_NAME}"
 ```

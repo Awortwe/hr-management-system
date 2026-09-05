@@ -29,7 +29,7 @@ it('emails a salary payment notice only for newly generated payslips', function 
 
     $hr = User::factory()->role('hr')->create();
     $employee = notificationEmployee([
-        'work_email' => 'payroll.employee@example.test',
+        'work_email' => 'payroll.employee@hr-manager.pankhost.com',
         'first_name' => 'Payroll',
         'last_name' => 'Person',
         'basic_salary' => 5000,
@@ -46,7 +46,7 @@ it('emails a salary payment notice only for newly generated payslips', function 
     ])->assertRedirect();
 
     Mail::assertSent(SalaryPaymentProcessed::class, 1);
-    Mail::assertSent(SalaryPaymentProcessed::class, fn (SalaryPaymentProcessed $mail): bool => $mail->hasTo('payroll.employee@example.test')
+    Mail::assertSent(SalaryPaymentProcessed::class, fn (SalaryPaymentProcessed $mail): bool => $mail->hasTo('payroll.employee@hr-manager.pankhost.com')
         && $mail->item->employee_id === $employee->id
         && $mail->item->payroll->period_label === 'September 2026');
 
@@ -80,7 +80,7 @@ it('emails attendance confirmations after successful clock in and clock out', fu
     Carbon::setTestNow('2026-09-05 08:10:00');
 
     $employee = notificationEmployee([
-        'work_email' => 'attendance.employee@example.test',
+        'work_email' => 'attendance.employee@hr-manager.pankhost.com',
     ]);
 
     $this->actingAs($employee->user)
@@ -99,9 +99,9 @@ it('emails attendance confirmations after successful clock in and clock out', fu
         ->assertRedirect();
 
     Mail::assertSent(AttendanceUpdated::class, 2);
-    Mail::assertSent(AttendanceUpdated::class, fn (AttendanceUpdated $mail): bool => $mail->hasTo('attendance.employee@example.test')
+    Mail::assertSent(AttendanceUpdated::class, fn (AttendanceUpdated $mail): bool => $mail->hasTo('attendance.employee@hr-manager.pankhost.com')
         && $mail->event === 'clock-in');
-    Mail::assertSent(AttendanceUpdated::class, fn (AttendanceUpdated $mail): bool => $mail->hasTo('attendance.employee@example.test')
+    Mail::assertSent(AttendanceUpdated::class, fn (AttendanceUpdated $mail): bool => $mail->hasTo('attendance.employee@hr-manager.pankhost.com')
         && $mail->event === 'clock-out');
 
     expect(AttendanceRecord::query()->count())->toBe(1);
@@ -112,7 +112,7 @@ it('emails leave submission and a single approval decision', function (): void {
 
     $hr = notificationEmployee(['user_id' => User::factory()->role('hr')->create()->id]);
     $employee = notificationEmployee([
-        'work_email' => 'leave.employee@example.test',
+        'work_email' => 'leave.employee@hr-manager.pankhost.com',
     ]);
     $leaveType = LeaveType::factory()->create([
         'annual_allowance_days' => 20,
@@ -141,10 +141,10 @@ it('emails leave submission and a single approval decision', function (): void {
         ])
         ->assertRedirect();
 
-    Mail::assertSent(LeaveRequestSubmitted::class, fn (LeaveRequestSubmitted $mail): bool => $mail->hasTo('leave.employee@example.test')
+    Mail::assertSent(LeaveRequestSubmitted::class, fn (LeaveRequestSubmitted $mail): bool => $mail->hasTo('leave.employee@hr-manager.pankhost.com')
         && $mail->leaveRequest->id === $leaveRequest->id);
     Mail::assertSent(LeaveRequestDecision::class, 1);
-    Mail::assertSent(LeaveRequestDecision::class, fn (LeaveRequestDecision $mail): bool => $mail->hasTo('leave.employee@example.test')
+    Mail::assertSent(LeaveRequestDecision::class, fn (LeaveRequestDecision $mail): bool => $mail->hasTo('leave.employee@hr-manager.pankhost.com')
         && $mail->leaveRequest->status === 'approved');
 
     $balance = LeaveBalance::query()
@@ -160,7 +160,7 @@ it('emails leave rejection decisions', function (): void {
 
     $hr = notificationEmployee(['user_id' => User::factory()->role('hr')->create()->id]);
     $employee = notificationEmployee([
-        'work_email' => 'leave-rejected.employee@example.test',
+        'work_email' => 'leave-rejected.employee@hr-manager.pankhost.com',
     ]);
     $leaveType = LeaveType::factory()->create();
     $leaveRequest = LeaveRequest::factory()->create([
@@ -175,8 +175,31 @@ it('emails leave rejection decisions', function (): void {
         ])
         ->assertRedirect();
 
-    Mail::assertSent(LeaveRequestDecision::class, fn (LeaveRequestDecision $mail): bool => $mail->hasTo('leave-rejected.employee@example.test')
+    Mail::assertSent(LeaveRequestDecision::class, fn (LeaveRequestDecision $mail): bool => $mail->hasTo('leave-rejected.employee@hr-manager.pankhost.com')
         && $mail->leaveRequest->status === 'rejected');
+});
+
+it('falls back from seeded demo work emails to a deliverable personal email', function (): void {
+    Mail::fake();
+
+    $hr = notificationEmployee(['user_id' => User::factory()->role('hr')->create()->id]);
+    $employee = notificationEmployee([
+        'work_email' => 'seed.employee@peoplehq.test',
+        'personal_email' => 'real.employee@hr-manager.pankhost.com',
+    ]);
+    $leaveType = LeaveType::factory()->create();
+    $leaveRequest = LeaveRequest::factory()->create([
+        'employee_id' => $employee->id,
+        'leave_type_id' => $leaveType->id,
+        'status' => 'pending',
+    ]);
+
+    $this->actingAs($hr->user)
+        ->patch(route('staff.leave-requests.approve', $leaveRequest))
+        ->assertRedirect();
+
+    Mail::assertSent(LeaveRequestDecision::class, fn (LeaveRequestDecision $mail): bool => $mail->hasTo('real.employee@hr-manager.pankhost.com')
+        && ! $mail->hasTo('seed.employee@peoplehq.test'));
 });
 
 function notificationEmployee(array $attributes = []): Employee

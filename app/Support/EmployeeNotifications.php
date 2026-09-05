@@ -41,7 +41,9 @@ class EmployeeNotifications
 
     private static function sendToEmployee(?Employee $employee, Mailable $mailable): void
     {
-        $email = $employee?->work_email ?: $employee?->personal_email;
+        $email = collect([$employee?->work_email, $employee?->personal_email])
+            ->filter(fn (?string $email): bool => self::isDeliverableAddress($email))
+            ->first();
 
         if (! $email) {
             return;
@@ -51,5 +53,25 @@ class EmployeeNotifications
             fn () => Mail::to($email)->send($mailable),
             report: true,
         );
+    }
+
+    private static function isDeliverableAddress(?string $email): bool
+    {
+        if (! $email || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
+
+        $domain = strtolower((string) str($email)->afterLast('@'));
+
+        return ! str($domain)->endsWith([
+            '.example',
+            '.invalid',
+            '.localhost',
+            '.test',
+            'example.com',
+            'example.net',
+            'example.org',
+            'localhost',
+        ]);
     }
 }
