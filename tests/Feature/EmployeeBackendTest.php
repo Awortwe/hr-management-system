@@ -72,8 +72,9 @@ it('replaces and deletes profile photos without leaving the old file linked', fu
     Storage::disk('public')->assertExists($firstPhoto);
 
     $this->actingAs($hr)
-        ->put(route('staff.employees.update', $employee), [
+        ->post(route('staff.employees.update', $employee), [
             ...employeePayload($department, $position),
+            '_method' => 'patch',
             'employee_number' => 'PHQ-9002',
             'profile_photo' => UploadedFile::fake()->image('replacement.png'),
         ])
@@ -86,8 +87,9 @@ it('replaces and deletes profile photos without leaving the old file linked', fu
     $secondPhoto = $employee->profile_photo_path;
 
     $this->actingAs($hr)
-        ->put(route('staff.employees.update', $employee), [
+        ->post(route('staff.employees.update', $employee), [
             ...employeePayload($department, $position),
+            '_method' => 'patch',
             'employee_number' => 'PHQ-9002',
             'delete_profile_photo' => true,
         ])
@@ -95,6 +97,32 @@ it('replaces and deletes profile photos without leaving the old file linked', fu
 
     Storage::disk('public')->assertMissing($secondPhoto);
     expect($employee->fresh()->profile_photo_path)->toBeNull();
+});
+
+it('sends a browser-ready avatar URL to employee pages', function (): void {
+    Storage::fake('public');
+
+    $hr = User::factory()->create([
+        'role' => 'hr',
+    ]);
+    $department = Department::factory()->create();
+    $position = Position::factory()->create([
+        'department_id' => $department->id,
+    ]);
+    $employee = Employee::factory()->create([
+        'department_id' => $department->id,
+        'position_id' => $position->id,
+        'profile_photo_path' => 'employee-photos/avatar.jpg',
+    ]);
+
+    Storage::disk('public')->put('employee-photos/avatar.jpg', 'avatar');
+
+    $response = $this->actingAs($hr)->get(route('staff.employees.show', $employee));
+
+    $page = $response->getOriginalContent()->getData()['page'];
+
+    $response->assertOk();
+    expect($page['props']['employee']['avatar_url'])->toEndWith('/storage/employee-photos/avatar.jpg');
 });
 
 function employeePayload(Department $department, Position $position): array

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'user_id',
@@ -62,6 +63,15 @@ class Employee extends Model
             $this->middle_name,
             $this->last_name,
         ])->filter()->join(' '));
+    }
+
+    protected function avatarUrl(): Attribute
+    {
+        return Attribute::get(
+            fn (): ?string => $this->profile_photo_path
+                ? Storage::disk('public')->url($this->profile_photo_path)
+                : null,
+        );
     }
 
     public function user(): BelongsTo
