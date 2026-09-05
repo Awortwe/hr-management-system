@@ -112,6 +112,10 @@ export type LeaveBalance = {
 
 export type LeaveRequest = {
     id: number;
+    employee_id?: number;
+    leave_type_id?: number;
+    approver_id?: number | null;
+    employee?: Employee | null;
     leave_type?: LeaveType | null;
     approver?: Employee | null;
     start_date: string;
@@ -119,6 +123,9 @@ export type LeaveRequest = {
     requested_days: number | string;
     status: string;
     reason: string | null;
+    decision_comment?: string | null;
+    decided_at?: string | null;
+    can_approve?: boolean;
 };
 
 export type AttendanceRecord = {

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LeaveTypeController;
 use App\Http\Controllers\PositionController;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +19,12 @@ Route::get('/', function () {
             'Pest',
         ],
     ]);
+});
+
+Route::middleware('role:admin,hr,manager')->prefix('staff')->name('staff.')->group(function (): void {
+    Route::patch('/leave-requests/{leave_request}/approve', [LeaveRequestController::class, 'approve'])->name('leave-requests.approve');
+    Route::patch('/leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject'])->name('leave-requests.reject');
+    Route::resource('leave-requests', LeaveRequestController::class)->only(['index', 'store']);
 });
 
 Route::middleware('role:admin,hr')->prefix('staff')->name('staff.')->group(function (): void {
