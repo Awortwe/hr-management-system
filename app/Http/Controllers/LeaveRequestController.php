@@ -7,7 +7,6 @@ use App\Models\LeaveBalance;
 use App\Models\LeaveRequest;
 use App\Models\LeaveType;
 use App\Models\User;
-use App\Support\EmployeeNotifications;
 use App\Support\EmployeeSearch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -95,9 +94,7 @@ class LeaveRequestController extends Controller
         $attributes['requested_days'] = $this->calculateRequestedDays($attributes['start_date'], $attributes['end_date']);
         $attributes['status'] = 'pending';
 
-        $leaveRequest = LeaveRequest::create($attributes);
-
-        EmployeeNotifications::leaveSubmitted($leaveRequest);
+        LeaveRequest::create($attributes);
 
         return back()->with('success', 'Leave request submitted.');
     }
@@ -110,9 +107,7 @@ class LeaveRequestController extends Controller
             'decision_comment' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $approvedRequest = null;
-
-        DB::transaction(function () use ($attributes, $leaveRequest, $request, &$approvedRequest): void {
+        DB::transaction(function () use ($attributes, $leaveRequest, $request): void {
             $lockedRequest = LeaveRequest::query()
                 ->whereKey($leaveRequest->id)
                 ->lockForUpdate()
@@ -151,13 +146,7 @@ class LeaveRequestController extends Controller
                     ],
                 )
                 ->increment('used_days', $requestedDays);
-
-            $approvedRequest = $lockedRequest;
         });
-
-        if ($approvedRequest) {
-            EmployeeNotifications::leaveDecided($approvedRequest);
-        }
 
         return back()->with('success', 'Leave request approved and balance updated.');
     }
@@ -170,9 +159,7 @@ class LeaveRequestController extends Controller
             'decision_comment' => ['required', 'string', 'max:2000'],
         ]);
 
-        $rejectedRequest = null;
-
-        DB::transaction(function () use ($attributes, $leaveRequest, $request, &$rejectedRequest): void {
+        DB::transaction(function () use ($attributes, $leaveRequest, $request): void {
             $lockedRequest = LeaveRequest::query()
                 ->whereKey($leaveRequest->id)
                 ->lockForUpdate()
@@ -195,13 +182,7 @@ class LeaveRequestController extends Controller
                 'decision_comment' => $attributes['decision_comment'],
                 'decided_at' => now(),
             ]);
-
-            $rejectedRequest = $lockedRequest;
         });
-
-        if ($rejectedRequest) {
-            EmployeeNotifications::leaveDecided($rejectedRequest);
-        }
 
         return back()->with('success', 'Leave request rejected.');
     }

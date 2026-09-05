@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Support\EmployeeSearch;
-use App\Support\UserAccountNotifications;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -31,11 +30,7 @@ class UserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $attributes = $this->validated($request);
-        $plainPassword = $attributes['password'];
-        $user = User::create($attributes);
-
-        UserAccountNotifications::accountCreated($user, $plainPassword);
+        User::create($this->validated($request));
 
         return back()->with('success', 'Account created.');
     }
