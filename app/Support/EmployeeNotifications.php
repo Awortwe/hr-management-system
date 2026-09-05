@@ -17,33 +17,31 @@ class EmployeeNotifications
 {
     public static function salaryPayment(PayrollItem $item): void
     {
-        $item->loadMissing(['employee', 'payroll']);
+        $item->loadMissing(['employee.user', 'payroll']);
         self::sendToEmployee($item->employee, new SalaryPaymentProcessed($item));
     }
 
     public static function attendanceUpdated(AttendanceRecord $record, string $event): void
     {
-        $record->loadMissing('employee');
+        $record->loadMissing('employee.user');
         self::sendToEmployee($record->employee, new AttendanceUpdated($record, $event));
     }
 
     public static function leaveSubmitted(LeaveRequest $leaveRequest): void
     {
-        $leaveRequest->loadMissing(['employee', 'leaveType']);
+        $leaveRequest->loadMissing(['employee.user', 'leaveType']);
         self::sendToEmployee($leaveRequest->employee, new LeaveRequestSubmitted($leaveRequest));
     }
 
     public static function leaveDecided(LeaveRequest $leaveRequest): void
     {
-        $leaveRequest->loadMissing(['employee', 'leaveType', 'approver']);
+        $leaveRequest->loadMissing(['employee.user', 'leaveType', 'approver']);
         self::sendToEmployee($leaveRequest->employee, new LeaveRequestDecision($leaveRequest));
     }
 
     private static function sendToEmployee(?Employee $employee, Mailable $mailable): void
     {
-        $email = collect([$employee?->work_email, $employee?->personal_email])
-            ->filter(fn (?string $email): bool => self::isDeliverableAddress($email))
-            ->first();
+        $email = $employee?->user?->email;
 
         if (! $email) {
             return;
@@ -53,25 +51,5 @@ class EmployeeNotifications
             fn () => Mail::to($email)->send($mailable),
             report: true,
         );
-    }
-
-    private static function isDeliverableAddress(?string $email): bool
-    {
-        if (! $email || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return false;
-        }
-
-        $domain = strtolower((string) str($email)->afterLast('@'));
-
-        return ! str($domain)->endsWith([
-            '.example',
-            '.invalid',
-            '.localhost',
-            '.test',
-            'example.com',
-            'example.net',
-            'example.org',
-            'localhost',
-        ]);
     }
 }
