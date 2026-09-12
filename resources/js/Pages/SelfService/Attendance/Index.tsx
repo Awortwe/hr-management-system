@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { Camera, LocateFixed, RefreshCcw, UploadCloud } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import Head from '../../../Components/PageHead';
 import AppLayout from '../../../Layouts/AppLayout';
 import SafeAvatar from '../../../Components/Avatar';
@@ -12,7 +13,9 @@ type Props = {
         position?: Pick<Position, 'id' | 'title'> | null;
         shift?: Shift | null;
         project_sites?: ProjectSite[];
+        has_project_site_assignment?: boolean;
     }) | null;
+    hasActiveProjectSites: boolean;
     todayRecord: AttendanceRecord | null;
     recentRecords: AttendanceRecord[];
     workDate: string;
@@ -36,9 +39,10 @@ type OfflinePunch = {
 
 const offlineKey = 'peoplehq.offlinePunches';
 
-export default function Index({ employee, todayRecord, recentRecords, workDate, lateAfter }: Props) {
+export default function Index({ employee, hasActiveProjectSites, todayRecord, recentRecords, workDate, lateAfter }: Props) {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const selfieInputRef = useRef<HTMLInputElement | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const [cameraStatus, setCameraStatus] = useState('Camera not started.');
     const [selfie, setSelfie] = useState<File | null>(null);
@@ -72,6 +76,7 @@ export default function Index({ employee, todayRecord, recentRecords, workDate, 
     const nextAction: 'clock-in' | 'clock-out' = hasClockedIn ? 'clock-out' : 'clock-in';
     const canPunch = Boolean(employee) && Boolean(selfie) && location.status === 'ready' && ! hasClockedOut && ! punchForm.processing;
     const detectedSite = useMemo(() => detectSite(employee?.project_sites ?? [], location.latitude, location.longitude), [employee?.project_sites, location.latitude, location.longitude]);
+    const siteMessage = siteStatusMessage(hasActiveProjectSites, employee?.has_project_site_assignment ?? false, detectedSite?.site?.name, todayRecord?.project_site?.name);
 
     useEffect(() => () => stopCamera(), []);
     useEffect(() => {
@@ -82,14 +87,20 @@ export default function Index({ employee, todayRecord, recentRecords, workDate, 
 
     async function startCamera() {
         try {
+            if (! navigator.mediaDevices?.getUserMedia) {
+                setCameraStatus('This browser cannot open the camera here. Use Upload Photo instead.');
+                return;
+            }
+
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
             streamRef.current = stream;
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
+                await videoRef.current.play();
             }
             setCameraStatus('Camera ready. Capture a clear selfie before punching.');
         } catch {
-            setCameraStatus('Camera permission was denied or no camera was found.');
+            setCameraStatus('Camera permission was denied or no camera was found. Use Upload Photo instead.');
         }
     }
 
@@ -99,15 +110,20 @@ export default function Index({ employee, todayRecord, recentRecords, workDate, 
     }
 
     function captureSelfie() {
-        if (! videoRef.current || ! canvasRef.current) {
+        if (! videoRef.current || ! canvasRef.current || ! streamRef.current) {
             setCameraStatus('Start the camera before capturing a selfie.');
             return;
         }
 
         const video = videoRef.current;
+        if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
+            setCameraStatus('The camera is not ready yet. Wait a moment, then capture again.');
+            return;
+        }
+
         const canvas = canvasRef.current;
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
         canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
         canvas.toBlob((blob) => {
             if (! blob) {
@@ -120,6 +136,29 @@ export default function Index({ employee, todayRecord, recentRecords, workDate, 
             setSelfiePreview(URL.createObjectURL(file));
             setCameraStatus('Selfie captured.');
         }, 'image/jpeg', 0.88);
+    }
+
+    function selectSelfie(event: ChangeEvent<HTMLInputElement>) {
+        const file = event.target.files?.[0];
+
+        if (! file) {
+            return;
+        }
+
+        if (! file.type.startsWith('image/')) {
+            setCameraStatus('Please choose an image file for the selfie.');
+            return;
+        }
+
+        setSelfie(file);
+        setSelfiePreview((current) => {
+            if (current) {
+                URL.revokeObjectURL(current);
+            }
+
+            return URL.createObjectURL(file);
+        });
+        setCameraStatus('Selfie selected.');
     }
 
     function captureGps() {
@@ -213,12 +252,16 @@ export default function Index({ employee, todayRecord, recentRecords, workDate, 
                             <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
                                 <video ref={videoRef} className="aspect-video w-full rounded-md bg-zinc-950 object-cover" autoPlay playsInline muted />
                                 <canvas ref={canvasRef} className="hidden" />
+                                <input ref={selfieInputRef} className="hidden" type="file" accept="image/*" capture="user" onChange={selectSelfie} />
                                 <div className="mt-3 flex flex-wrap gap-2">
                                     <button className="inline-flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold" type="button" onClick={startCamera}>
                                         <Camera size={16} /> Start Camera
                                     </button>
                                     <button className="inline-flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-semibold text-white" type="button" onClick={captureSelfie}>
                                         <Camera size={16} /> Capture Selfie
+                                    </button>
+                                    <button className="inline-flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold" type="button" onClick={() => selfieInputRef.current?.click()}>
+                                        <UploadCloud size={16} /> Upload Photo
                                     </button>
                                 </div>
                                 <p className="mt-2 text-xs text-zinc-600">{cameraStatus}</p>
@@ -233,10 +276,15 @@ export default function Index({ employee, todayRecord, recentRecords, workDate, 
                                 <div className="mt-3 grid gap-2 text-sm">
                                     <Detail label="Latitude" value={location.latitude?.toFixed(7) ?? '--'} />
                                     <Detail label="Longitude" value={location.longitude?.toFixed(7) ?? '--'} />
-                                    <Detail label="Nearest Site" value={detectedSite?.site?.name ?? todayRecord?.project_site?.name ?? 'No active site detected'} />
+                                    <Detail label="Nearest Site" value={siteMessage} />
                                     <Detail label="Distance" value={detectedSite ? `${detectedSite.distance.toFixed(1)}m` : formatDistance(todayRecord?.distance_from_site)} />
                                     <Detail label="Zone" value={detectedSite?.zone ?? todayRecord?.zone_status ?? 'unknown'} />
                                 </div>
+                                {! employee?.has_project_site_assignment && hasActiveProjectSites && (
+                                    <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+                                        You are not assigned to a specific site yet, so the app is using all active company sites for detection.
+                                    </p>
+                                )}
                             </div>
                         </div>
 
@@ -391,6 +439,22 @@ function detectSite(sites: ProjectSite[], latitude: number | null, longitude: nu
             return { site, distance, zone: distance <= site.geofence_radius_meters ? 'in_zone' : 'out_of_zone' };
         })
         .sort((a, b) => a.distance - b.distance)[0];
+}
+
+function siteStatusMessage(hasActiveSites: boolean, hasAssignment: boolean, detectedName?: string, recordedName?: string) {
+    if (detectedName || recordedName) {
+        return detectedName ?? recordedName ?? '--';
+    }
+
+    if (! hasActiveSites) {
+        return 'No active project sites have been configured.';
+    }
+
+    if (! hasAssignment) {
+        return 'Capture GPS to detect the nearest active company site.';
+    }
+
+    return 'Capture GPS to detect your assigned site.';
 }
 
 function distanceMeters(siteLat: number, siteLng: number, lat: number, lng: number) {
