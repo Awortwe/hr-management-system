@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\AttendanceRecord;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Payroll;
@@ -32,19 +31,6 @@ it('runs monthly payroll for active employees and safely skips existing payslips
         'employee_number' => 'PHQ-1002',
         'status' => 'terminated',
     ]);
-    AttendanceRecord::factory()->create([
-        'employee_id' => $activeEmployee->id,
-        'work_date' => '2026-09-03',
-        'overtime_hours' => 2,
-        'overtime_approved_at' => now(),
-        'overtime_approved_by' => $hr->id,
-    ]);
-    AttendanceRecord::factory()->create([
-        'employee_id' => $activeEmployee->id,
-        'work_date' => '2026-09-04',
-        'overtime_hours' => 10,
-        'overtime_approved_at' => null,
-    ]);
 
     $this->actingAs($hr)
         ->post(route('staff.payroll.run'), [
@@ -67,13 +53,12 @@ it('runs monthly payroll for active employees and safely skips existing payslips
 
     expect(Payroll::query()->count())->toBe(1)
         ->and(PayrollItem::query()->count())->toBe(1)
-        ->and($item->gross_pay)->toBe('5685.23')
-        ->and($item->deductions_total)->toBe('795.93')
-        ->and($item->net_pay)->toBe('4889.30')
-        ->and($item->snapshot['approved_overtime_hours'])->toBe(2)
-        ->and($payroll->gross_total)->toBe('5685.23')
-        ->and($payroll->deduction_total)->toBe('795.93')
-        ->and($payroll->net_total)->toBe('4889.30');
+        ->and($item->gross_pay)->toBe('5600.00')
+        ->and($item->deductions_total)->toBe('784.00')
+        ->and($item->net_pay)->toBe('4816.00')
+        ->and($payroll->gross_total)->toBe('5600.00')
+        ->and($payroll->deduction_total)->toBe('784.00')
+        ->and($payroll->net_total)->toBe('4816.00');
 });
 
 it('renders payroll items in inertia and opens a blade payslip document', function (): void {

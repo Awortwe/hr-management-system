@@ -13,7 +13,6 @@ export type Employee = {
     department_id?: number;
     position_id?: number;
     manager_id?: number | null;
-    shift_id?: number | null;
     employee_number?: string;
     first_name?: string;
     middle_name?: string | null;
@@ -44,8 +43,6 @@ export type Employee = {
     ssnit_reference?: string | null;
     department?: (Pick<Department, 'id' | 'name' | 'code'> & { manager?: Employee | null }) | null;
     position?: Pick<Position, 'id' | 'title'> | null;
-    shift?: Shift | null;
-    project_sites?: ProjectSite[];
     manager?: Employee | null;
     user?: User | null;
     leave_requests_count?: number;
@@ -138,18 +135,6 @@ export type AttendanceRecord = {
     clock_out_at: string | null;
     status: string;
     worked_minutes?: number;
-    check_in_selfie_url?: string | null;
-    check_out_selfie_url?: string | null;
-    check_in_latitude?: string | number | null;
-    check_in_longitude?: string | number | null;
-    check_out_latitude?: string | number | null;
-    check_out_longitude?: string | number | null;
-    project_site?: Pick<ProjectSite, 'id' | 'name' | 'code'> | null;
-    distance_from_site?: string | number | null;
-    zone_status?: string | null;
-    approval_status?: string | null;
-    overtime_hours?: number;
-    overtime_approved_at?: string | null;
     exists?: boolean;
 };
 
@@ -164,10 +149,6 @@ export type AttendanceOverviewRow = {
     clock_out_at: string | null;
     status: string;
     hours_worked: number;
-    project_site?: string | null;
-    zone_status?: string | null;
-    approval_status?: string | null;
-    overtime_hours?: number;
 };
 
 export type AttendanceSummary = {
@@ -279,89 +260,4 @@ export type CompanySettings = {
     website: string | null;
     address: string | null;
     registration_number: string | null;
-    allow_offline_punch?: boolean;
-    require_device_binding?: boolean;
-    default_geofence_radius_meters?: number;
-    late_threshold_minutes?: number;
-    weekend_days?: string[] | null;
-    attendance_approval_rule?: string | null;
-};
-
-export type Shift = {
-    id: number;
-    name: string;
-    starts_at: string;
-    ends_at: string;
-    grace_minutes: number;
-    unpaid_break_minutes: number;
-    is_night_shift: boolean;
-    overtime_rate: string | number;
-    overtime_cap_hours: string | number;
-    is_active?: boolean;
-};
-
-export type ProjectSite = {
-    id: number;
-    name: string;
-    code: string;
-    address?: string | null;
-    latitude: string | number;
-    longitude: string | number;
-    geofence_radius_meters: number;
-    status: string;
-    employees_count?: number;
-    employees?: Array<Pick<Employee, 'id' | 'employee_number' | 'full_name' | 'status'> & {
-        department?: string | null;
-        position?: string | null;
-    }>;
-};
-
-export type AttendanceCorrection = {
-    id: number;
-    employee_id: number;
-    attendance_record_id?: number | null;
-    employee?: Employee | null;
-    type: string;
-    work_date: string;
-    requested_clock_in_at?: string | null;
-    requested_clock_out_at?: string | null;
-    requested_latitude?: string | number | null;
-    requested_longitude?: string | number | null;
-    reason: string;
-    status: string;
-    review_remarks?: string | null;
-    reviewed_at?: string | null;
-};
-
-export type AttendanceReportRow = {
-    id: number;
-    work_date: string;
-    employee_number: string | null;
-    employee_name: string | null;
-    department: string | null;
-    position: string | null;
-    project_site: string | null;
-    clock_in_at: string | null;
-    clock_out_at: string | null;
-    status: string;
-    zone_status: string | null;
-    approval_status: string | null;
-    distance_from_site: string | number | null;
-    worked_minutes: number;
-    overtime_hours: number;
-    overtime_approved_at: string | null;
-};
-
-export type AttendanceMapMarker = {
-    id: number;
-    employee_name: string | null;
-    employee_number: string | null;
-    department: string | null;
-    position: string | null;
-    project_site: string | null;
-    latitude: number;
-    longitude: number;
-    clock_in_at: string | null;
-    distance_from_site: string | number | null;
-    zone_status: string | null;
 };

@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +16,6 @@ use Illuminate\Support\Facades\Storage;
     'department_id',
     'position_id',
     'manager_id',
-    'shift_id',
     'employee_number',
     'first_name',
     'middle_name',
@@ -96,11 +94,6 @@ class Employee extends Model
         return $this->belongsTo(self::class, 'manager_id');
     }
 
-    public function shift(): BelongsTo
-    {
-        return $this->belongsTo(Shift::class);
-    }
-
     public function reportsTo(): BelongsTo
     {
         return $this->manager();
@@ -134,16 +127,6 @@ class Employee extends Model
     public function attendanceRecords(): HasMany
     {
         return $this->hasMany(AttendanceRecord::class);
-    }
-
-    public function projectSites(): BelongsToMany
-    {
-        return $this->belongsToMany(ProjectSite::class)->withTimestamps();
-    }
-
-    public function attendanceCorrections(): HasMany
-    {
-        return $this->hasMany(AttendanceCorrection::class);
     }
 
     public function payrollItems(): HasMany

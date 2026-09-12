@@ -1,6 +1,6 @@
 # PeopleHQ HR Management System
 
-PeopleHQ is a browser-based HR management system built with Laravel 13, React 19, Inertia.js 3, Tailwind CSS 4, and MySQL. It includes session authentication, four roles, employee records and photos, departments and positions, leave approvals and balances, selfie/GPS field attendance, project-site geofencing, attendance corrections, overtime approval, payroll, printable payslips, dashboards, CSV exports, searchable lists, audit logs, and company settings. Notifications and calendars remain future enhancements.
+PeopleHQ is a browser-based HR management system built with Laravel 13, React 19, Inertia.js 3, Tailwind CSS 4, and MySQL. It includes session authentication, four roles, employee records and photos, departments and positions, leave approvals and balances, personal and company attendance, payroll, printable payslips, dashboards, CSV exports, searchable lists, and company settings. Notifications, calendars, and audit history remain future enhancements.
 
 ## Completed Workflows
 
@@ -8,7 +8,7 @@ The [Word user guide](docs/PeopleHQ_Application_User_Guide.docx) explains local 
 
 - Admin and HR have the company dashboard, directory, organization management, leave approvals, company attendance, and payroll.
 - Managers have a personal home, direct-report directory and attendance, and leave decisions restricted to their reports.
-- Employees have a personal home, profile and balances, selfie/GPS clock-in/out, attendance correction requests, and their own leave requests.
+- Employees have a personal home, profile and balances, clock-in/out, and their own leave requests.
 - Admins can create, edit, and delete login accounts. Employee records can be linked to those accounts through the employee form.
 - All HR routes require a session. Sign-in is throttled; logout invalidates the session. Navigation works on mobile and desktop.
 
@@ -24,16 +24,6 @@ npm run build
 ```
 
 Sign in as an admin and open **Company Settings** (`/admin/company`). Update the company name, subtitle, email, phone, website, address, and registration number, then save. Branding updates on subsequent page loads/navigation, including the login page, headers, sidebar, browser titles, CSV filenames, and printable payslips. Contact and registration details appear on payslips; only the public name/subtitle are shared with the login screen. Existing payslips use current company details when reopened; employee salary snapshots are unchanged. Before the migration is applied, existing pages retain default branding and the settings form cannot be saved.
-
-## Selfie + GPS Field Attendance
-
-Apply the field-attendance migration before using the module. It adds project sites, shifts, employee-site assignments, GPS/selfie attendance fields, correction requests, overtime approvals, and audit logs.
-
-Admin/HR can open **Project Sites** (`/staff/project-sites`) to create geofenced sites with latitude, longitude, radius, status, and assigned employees. The app uses the Haversine formula to compare an employee punch location with the nearest assigned active site. In-zone punches are approved automatically; out-of-zone punches are stored and flagged for review.
-
-Employees open **My Attendance** (`/self-service/attendance`) on a phone, allow camera and GPS permissions, capture a selfie, capture GPS, then check in or check out. The page shows current status, detected site, distance, zone badge, upload progress, and offline queue state. If a submission fails, GPS/time metadata is saved in `localStorage`; selfie uploads still require an online retry.
-
-Managers, HR, and Admin can use **Attendance Map**, **Attendance Reports**, and **Corrections** to review live check-ins, approve/reject correction requests, export CSV reports, and monitor out-of-zone punches. Managers are scoped to their direct reports. Approved overtime is included in payroll; unapproved overtime is excluded.
 
 ## Verification
 
