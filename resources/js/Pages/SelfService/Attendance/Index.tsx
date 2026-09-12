@@ -50,6 +50,7 @@ export default function Index({ employee, hasActiveProjectSites, todayRecord, re
     const selfieInputRef = useRef<HTMLInputElement | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const [cameraStatus, setCameraStatus] = useState('Camera not started.');
+    const [isCameraStarting, setIsCameraStarting] = useState(false);
     const [cameraDevices, setCameraDevices] = useState<CameraDevice[]>([]);
     const [selectedCameraId, setSelectedCameraId] = useState('');
     const [selfie, setSelfie] = useState<File | null>(null);
@@ -128,24 +129,34 @@ export default function Index({ employee, hasActiveProjectSites, todayRecord, re
         }
 
         try {
+            setIsCameraStarting(true);
             setCameraStatus('Starting camera...');
             stopCamera();
             const stream = await getCameraStream(selectedCameraId);
             streamRef.current = stream;
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
-                await videoRef.current.play();
+                videoRef.current.muted = true;
+                videoRef.current.playsInline = true;
+                videoRef.current.play().catch(() => {
+                    setCameraStatus('Camera connected. If the preview stays black, press Start Camera again or select the camera from the dropdown.');
+                });
             }
             await loadCameraDevices(stream);
             setCameraStatus('Camera ready. Capture a clear selfie before punching.');
         } catch (error) {
             setCameraStatus(cameraErrorMessage(error));
+        } finally {
+            setIsCameraStarting(false);
         }
     }
 
     function stopCamera() {
         streamRef.current?.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
     }
 
     function captureSelfie() {
@@ -309,8 +320,8 @@ export default function Index({ employee, hasActiveProjectSites, todayRecord, re
                                     </select>
                                 )}
                                 <div className="mt-3 flex flex-wrap gap-2">
-                                    <button className="inline-flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold" type="button" onClick={startCamera}>
-                                        <Camera size={16} /> Start Camera
+                                    <button className="inline-flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60" type="button" onClick={startCamera} disabled={isCameraStarting}>
+                                        <Camera size={16} /> {isCameraStarting ? 'Starting...' : 'Start Camera'}
                                     </button>
                                     <button className="inline-flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-semibold text-white" type="button" onClick={captureSelfie}>
                                         <Camera size={16} /> Capture Selfie
