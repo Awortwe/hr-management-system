@@ -11,6 +11,8 @@ use App\Models\LeaveType;
 use App\Models\Payroll;
 use App\Models\PayrollItem;
 use App\Models\Position;
+use App\Models\ProjectSite;
+use App\Models\Shift;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -54,6 +56,23 @@ class DatabaseSeeder extends Seeder
                 ['name' => 'Sick Leave', 'annual_allowance_days' => 10, 'is_paid' => true, 'color' => '#16a34a'],
                 ['name' => 'Unpaid Leave', 'annual_allowance_days' => 0, 'is_paid' => false, 'color' => '#71717a'],
             ])->map(fn (array $attributes): LeaveType => LeaveType::factory()->create($attributes));
+
+            $dayShift = Shift::query()->firstOrCreate([
+                'name' => 'Standard Day Shift',
+            ], [
+                'starts_at' => '08:00:00',
+                'ends_at' => '17:00:00',
+                'grace_minutes' => 15,
+                'unpaid_break_minutes' => 60,
+                'overtime_rate' => 1.5,
+                'overtime_cap_hours' => 4,
+            ]);
+
+            $sites = collect([
+                ['name' => 'Accra Head Office', 'code' => 'AHO', 'address' => 'Osu, Accra', 'latitude' => 5.560014, 'longitude' => -0.205744, 'geofence_radius_meters' => 250],
+                ['name' => 'Tema Field Site', 'code' => 'TFS', 'address' => 'Tema Community 1', 'latitude' => 5.669800, 'longitude' => -0.016600, 'geofence_radius_meters' => 350],
+                ['name' => 'Kumasi Client Site', 'code' => 'KCS', 'address' => 'Adum, Kumasi', 'latitude' => 6.688500, 'longitude' => -1.624400, 'geofence_radius_meters' => 400],
+            ])->map(fn (array $site): ProjectSite => ProjectSite::query()->firstOrCreate(['code' => $site['code']], $site));
 
             $employees = collect();
 
@@ -169,6 +188,10 @@ class DatabaseSeeder extends Seeder
             });
 
             $this->seedLeaveRequests($employees, $leaveTypes);
+            $employees->each(function (Employee $employee, int $index) use ($dayShift, $sites): void {
+                $employee->update(['shift_id' => $dayShift->id]);
+                $employee->projectSites()->syncWithoutDetaching([$sites[$index % $sites->count()]->id]);
+            });
             $this->seedAttendance($employees);
             $this->seedPayroll($employees, $admin->user);
         });

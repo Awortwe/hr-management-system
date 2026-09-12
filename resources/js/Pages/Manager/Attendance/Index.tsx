@@ -63,6 +63,10 @@ export default function Index({ workDate, rows, summary, companyWide, filters }:
                                     <th className="px-4 py-3">Clock Out</th>
                                     <th className="px-4 py-3">Hours</th>
                                     <th className="px-4 py-3">Status</th>
+                                    <th className="px-4 py-3">Site</th>
+                                    <th className="px-4 py-3">Zone</th>
+                                    <th className="px-4 py-3">Approval</th>
+                                    <th className="px-4 py-3">Overtime</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-100">
@@ -80,11 +84,15 @@ export default function Index({ workDate, rows, summary, companyWide, filters }:
                                         <td className="px-4 py-3 text-zinc-700">{formatTime(row.clock_out_at)}</td>
                                         <td className="px-4 py-3 text-zinc-700">{row.hours_worked.toFixed(2)}</td>
                                         <td className="px-4 py-3"><StatusBadge status={row.status} /></td>
+                                        <td className="px-4 py-3 text-zinc-700">{row.project_site ?? '--'}</td>
+                                        <td className="px-4 py-3"><StatusBadge status={row.zone_status ?? 'unknown'} /></td>
+                                        <td className="px-4 py-3"><StatusBadge status={row.approval_status ?? 'not_submitted'} /></td>
+                                        <td className="px-4 py-3 text-zinc-700">{row.overtime_hours ?? 0}h</td>
                                     </tr>
                                 ))}
                                 {rows.length === 0 && (
                                     <tr>
-                                        <td className="px-4 py-8 text-center text-zinc-500" colSpan={6}>
+                                        <td className="px-4 py-8 text-center text-zinc-500" colSpan={10}>
                                             No employees found.
                                         </td>
                                     </tr>
@@ -119,6 +127,11 @@ function StatusBadge({ status }: { status: string }) {
         present: 'bg-emerald-50 text-emerald-700',
         late: 'bg-amber-50 text-amber-700',
         absent: 'bg-rose-50 text-rose-700',
+        in_zone: 'bg-emerald-50 text-emerald-700',
+        out_of_zone: 'bg-rose-50 text-rose-700',
+        approved: 'bg-emerald-50 text-emerald-700',
+        pending: 'bg-amber-50 text-amber-700',
+        rejected: 'bg-rose-50 text-rose-700',
     }[status] ?? 'bg-zinc-100 text-zinc-600';
 
     return <span className={`rounded-md px-2 py-1 text-xs font-semibold ${classes}`}>{titleCase(status)}</span>;

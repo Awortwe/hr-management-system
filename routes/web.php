@@ -1,14 +1,19 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AttendanceApprovalController;
+use App\Http\Controllers\AttendanceCorrectionController;
+use App\Http\Controllers\AttendanceReportController;
 use App\Http\Controllers\CompanySettingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LeaveTypeController;
+use App\Http\Controllers\LiveAttendanceMapController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PositionController;
+use App\Http\Controllers\ProjectSiteController;
 use App\Http\Controllers\SelfServiceAttendanceController;
 use App\Http\Controllers\SelfServiceController;
 use App\Http\Controllers\UserController;
@@ -31,6 +36,17 @@ Route::middleware('auth')->group(function (): void {
     Route::middleware('role:admin,hr,manager')->prefix('staff')->name('staff.')->group(function (): void {
         Route::patch('/leave-requests/{leave_request}/approve', [LeaveRequestController::class, 'approve'])->name('leave-requests.approve');
         Route::patch('/leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject'])->name('leave-requests.reject');
+        Route::get('/attendance-corrections', [AttendanceCorrectionController::class, 'index'])->name('attendance-corrections.index');
+        Route::patch('/attendance-corrections/{attendance_correction}/approve', [AttendanceCorrectionController::class, 'approve'])->name('attendance-corrections.approve');
+        Route::patch('/attendance-corrections/{attendance_correction}/reject', [AttendanceCorrectionController::class, 'reject'])->name('attendance-corrections.reject');
+        Route::get('/attendance-map', [LiveAttendanceMapController::class, 'index'])->name('attendance-map.index');
+        Route::get('/attendance-map/data', [LiveAttendanceMapController::class, 'data'])->name('attendance-map.data');
+        Route::get('/attendance-reports', [AttendanceReportController::class, 'index'])->name('attendance-reports.index');
+        Route::get('/attendance-reports/export', [AttendanceReportController::class, 'export'])->name('attendance-reports.export');
+        Route::patch('/attendance-records/{attendance_record}/approve', [AttendanceApprovalController::class, 'approve'])->name('attendance-records.approve');
+        Route::patch('/attendance-records/{attendance_record}/reject', [AttendanceApprovalController::class, 'reject'])->name('attendance-records.reject');
+        Route::patch('/attendance-records/{attendance_record}/approve-overtime', [AttendanceApprovalController::class, 'approveOvertime'])->name('attendance-records.approve-overtime');
+        Route::patch('/attendance-records/{attendance_record}/reject-overtime', [AttendanceApprovalController::class, 'rejectOvertime'])->name('attendance-records.reject-overtime');
     });
 
     Route::middleware('role:admin,hr')->prefix('staff')->name('staff.')->group(function (): void {
@@ -40,6 +56,7 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/payroll/run', [PayrollController::class, 'run'])->name('payroll.run');
         Route::get('/payroll-items/{payroll_item}/payslip', [PayrollController::class, 'payslip'])->name('payroll-items.payslip');
         Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');
+        Route::resource('project-sites', ProjectSiteController::class)->except(['create', 'edit']);
         Route::resource('leave-types', LeaveTypeController::class)->except(['create', 'show', 'edit']);
         Route::resource('employees', EmployeeController::class)->except(['create', 'edit']);
     });
@@ -65,5 +82,6 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/attendance', [SelfServiceAttendanceController::class, 'index'])->name('attendance.index');
         Route::post('/attendance/clock-in', [SelfServiceAttendanceController::class, 'clockIn'])->name('attendance.clock-in');
         Route::post('/attendance/clock-out', [SelfServiceAttendanceController::class, 'clockOut'])->name('attendance.clock-out');
+        Route::post('/attendance-corrections', [AttendanceCorrectionController::class, 'store'])->name('attendance-corrections.store');
     });
 });

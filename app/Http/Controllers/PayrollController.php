@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CompanySetting;
+use App\Models\AttendanceRecord;
 use App\Models\Employee;
 use App\Models\Payroll;
 use App\Models\PayrollItem;
@@ -86,7 +87,15 @@ class PayrollController extends Controller
                 ->get()
                 ->each(function (Employee $employee) use ($payroll, &$created, &$skipped): void {
                     $basicSalary = (float) $employee->basic_salary;
-                    $allowances = round($basicSalary * 0.12, 2);
+                    $approvedOvertimeHours = (float) AttendanceRecord::query()
+                        ->where('employee_id', $employee->id)
+                        ->whereYear('work_date', $payroll->year)
+                        ->whereMonth('work_date', $payroll->month)
+                        ->whereNotNull('overtime_approved_at')
+                        ->sum('overtime_hours');
+                    $hourlyRate = $basicSalary > 0 ? $basicSalary / 176 : 0;
+                    $overtimePay = round($approvedOvertimeHours * $hourlyRate * 1.5, 2);
+                    $allowances = round(($basicSalary * 0.12) + $overtimePay, 2);
                     $grossPay = round($basicSalary + $allowances, 2);
                     $deductions = round($grossPay * 0.14, 2);
                     $netPay = round($grossPay - $deductions, 2);
@@ -113,6 +122,8 @@ class PayrollController extends Controller
                                 'position_id' => $employee->position_id,
                                 'month' => $payroll->month,
                                 'year' => $payroll->year,
+                                'approved_overtime_hours' => $approvedOvertimeHours,
+                                'overtime_pay' => $overtimePay,
                             ],
                         ],
                     );

@@ -33,11 +33,16 @@ class CompanySettingController extends Controller
             'website' => ['nullable', 'url:http,https', 'max:255'],
             'address' => ['nullable', 'string', 'max:1000'],
             'registration_number' => ['nullable', 'string', 'max:100'],
+            'allow_offline_punch' => ['sometimes', 'boolean'],
+            'require_device_binding' => ['sometimes', 'boolean'],
+            'default_geofence_radius_meters' => ['nullable', 'integer', 'min:10', 'max:10000'],
+            'late_threshold_minutes' => ['nullable', 'integer', 'min:0', 'max:240'],
+            'weekend_days' => ['nullable', 'array'],
+            'weekend_days.*' => ['string', 'max:20'],
+            'attendance_approval_rule' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $settings = new CompanySetting($attributes);
-        $settings->id = 1;
-        CompanySetting::upsert([$settings->getAttributes()], ['id'], array_keys($attributes));
+        CompanySetting::query()->updateOrCreate(['id' => 1], $attributes);
 
         return to_route('admin.company.edit')->with('success', 'Company details updated.');
     }
