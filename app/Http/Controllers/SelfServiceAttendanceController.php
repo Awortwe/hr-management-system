@@ -24,11 +24,6 @@ class SelfServiceAttendanceController extends Controller
             'shift:id,name,starts_at,ends_at,grace_minutes,unpaid_break_minutes,overtime_rate,overtime_cap_hours',
             'projectSites:id,name,code,address,latitude,longitude,geofence_radius_meters,status',
         ]);
-        $activeSites = ProjectSite::query()
-            ->where('status', 'active')
-            ->orderBy('name')
-            ->get(['id', 'name', 'code', 'address', 'latitude', 'longitude', 'geofence_radius_meters', 'status']);
-        $assignedSites = $employee?->projectSites ?? collect();
         $todayRecord = $employee ? $this->todayRecord($employee) : null;
 
         return Inertia::render('SelfService/Attendance/Index', [
@@ -40,10 +35,8 @@ class SelfServiceAttendanceController extends Controller
                 'department' => $employee->department,
                 'position' => $employee->position,
                 'shift' => $employee->shift,
-                'project_sites' => $assignedSites->isNotEmpty() ? $assignedSites->values() : $activeSites,
-                'has_project_site_assignment' => $assignedSites->isNotEmpty(),
+                'project_sites' => $employee->projectSites,
             ] : null,
-            'hasActiveProjectSites' => $activeSites->isNotEmpty(),
             'todayRecord' => $todayRecord ? $this->attendanceRow($todayRecord) : null,
             'recentRecords' => $employee
                 ? $employee->attendanceRecords()
