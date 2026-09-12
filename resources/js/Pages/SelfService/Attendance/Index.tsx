@@ -37,11 +37,6 @@ type OfflinePunch = {
     createdAt: string;
 };
 
-type CameraDevice = {
-    deviceId: string;
-    label: string;
-};
-
 const offlineKey = 'peoplehq.offlinePunches';
 
 export default function Index({ employee, hasActiveProjectSites, todayRecord, recentRecords, workDate, lateAfter }: Props) {
@@ -50,8 +45,6 @@ export default function Index({ employee, hasActiveProjectSites, todayRecord, re
     const selfieInputRef = useRef<HTMLInputElement | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const [cameraStatus, setCameraStatus] = useState('Camera not started.');
-    const [cameraDevices, setCameraDevices] = useState<CameraDevice[]>([]);
-    const [selectedCameraId, setSelectedCameraId] = useState('');
     const [selfie, setSelfie] = useState<File | null>(null);
     const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
     const [offlinePunches, setOfflinePunches] = useState<OfflinePunch[]>(() => readOfflinePunches());
@@ -87,59 +80,27 @@ export default function Index({ employee, hasActiveProjectSites, todayRecord, re
 
     useEffect(() => () => stopCamera(), []);
     useEffect(() => {
-        loadCameraDevices();
-    }, []);
-    useEffect(() => {
         const onOnline = () => setOfflinePunches(readOfflinePunches());
         window.addEventListener('online', onOnline);
         return () => window.removeEventListener('online', onOnline);
     }, []);
 
-    async function loadCameraDevices(activeStream?: MediaStream) {
-        if (! navigator.mediaDevices?.enumerateDevices) {
-            return;
-        }
-
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const cameras = devices
-            .filter((device) => device.kind === 'videoinput')
-            .map((device, index) => ({
-                deviceId: device.deviceId,
-                label: device.label || `Camera ${index + 1}`,
-            }));
-        const activeDeviceId = activeStream?.getVideoTracks()[0]?.getSettings().deviceId ?? '';
-
-        setCameraDevices(cameras);
-
-        if (activeDeviceId) {
-            setSelectedCameraId(activeDeviceId);
-        }
-    }
-
     async function startCamera() {
-        if (! window.isSecureContext) {
-            setCameraStatus('Camera access requires HTTPS or localhost. Open the hosted HTTPS site, then try again.');
-            return;
-        }
-
-        if (! navigator.mediaDevices?.getUserMedia) {
-            setCameraStatus('This browser cannot open the camera here. Try Chrome, Edge, Safari, or use Upload Photo.');
-            return;
-        }
-
         try {
-            setCameraStatus('Starting camera...');
-            stopCamera();
-            const stream = await getCameraStream(selectedCameraId);
+            if (! navigator.mediaDevices?.getUserMedia) {
+                setCameraStatus('This browser cannot open the camera here. Use Upload Photo instead.');
+                return;
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
             streamRef.current = stream;
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
                 await videoRef.current.play();
             }
-            await loadCameraDevices(stream);
             setCameraStatus('Camera ready. Capture a clear selfie before punching.');
-        } catch (error) {
-            setCameraStatus(cameraErrorMessage(error));
+        } catch {
+            setCameraStatus('Camera permission was denied or no camera was found. Use Upload Photo instead.');
         }
     }
 
@@ -172,13 +133,7 @@ export default function Index({ employee, hasActiveProjectSites, todayRecord, re
 
             const file = new File([blob], `attendance-selfie-${Date.now()}.jpg`, { type: 'image/jpeg' });
             setSelfie(file);
-            setSelfiePreview((current) => {
-                if (current) {
-                    URL.revokeObjectURL(current);
-                }
-
-                return URL.createObjectURL(file);
-            });
+            setSelfiePreview(URL.createObjectURL(file));
             setCameraStatus('Selfie captured.');
         }, 'image/jpeg', 0.88);
     }
@@ -298,16 +253,6 @@ export default function Index({ employee, hasActiveProjectSites, todayRecord, re
                                 <video ref={videoRef} className="aspect-video w-full rounded-md bg-zinc-950 object-cover" autoPlay playsInline muted />
                                 <canvas ref={canvasRef} className="hidden" />
                                 <input ref={selfieInputRef} className="hidden" type="file" accept="image/*" capture="user" onChange={selectSelfie} />
-                                {cameraDevices.length > 1 && (
-                                    <select className="form-input mt-3 w-full" value={selectedCameraId} onChange={(event) => setSelectedCameraId(event.target.value)}>
-                                        <option value="">Automatic camera</option>
-                                        {cameraDevices.map((device) => (
-                                            <option key={device.deviceId} value={device.deviceId}>
-                                                {device.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                )}
                                 <div className="mt-3 flex flex-wrap gap-2">
                                     <button className="inline-flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold" type="button" onClick={startCamera}>
                                         <Camera size={16} /> Start Camera
@@ -411,54 +356,6 @@ export default function Index({ employee, hasActiveProjectSites, todayRecord, re
             </div>
         </AppLayout>
     );
-}
-
-async function getCameraStream(selectedCameraId: string): Promise<MediaStream> {
-    const attempts: MediaStreamConstraints[] = selectedCameraId
-        ? [
-            { video: { deviceId: { exact: selectedCameraId } }, audio: false },
-            { video: true, audio: false },
-        ]
-        : [
-            { video: { facingMode: { ideal: 'user' } }, audio: false },
-            { video: true, audio: false },
-        ];
-
-    let lastError: unknown = null;
-
-    for (const constraints of attempts) {
-        try {
-            return await navigator.mediaDevices.getUserMedia(constraints);
-        } catch (error) {
-            lastError = error;
-        }
-    }
-
-    throw lastError;
-}
-
-function cameraErrorMessage(error: unknown) {
-    if (error instanceof DOMException) {
-        if (error.name === 'NotAllowedError' || error.name === 'SecurityError') {
-            return 'Camera access is blocked for this site. Click the lock icon in the address bar, allow Camera, then press Start Camera again.';
-        }
-
-        if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-            return 'No camera was found by the browser. Check that no other app is using it, then try again.';
-        }
-
-        if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-            return 'The camera is already in use by another app or browser tab. Close it there, then try again.';
-        }
-
-        if (error.name === 'OverconstrainedError' || error.name === 'ConstraintNotSatisfiedError') {
-            return 'This camera does not support the requested settings. Select Automatic camera, then try again.';
-        }
-
-        return `Camera could not start: ${error.message || error.name}.`;
-    }
-
-    return 'Camera could not start. Check browser camera permission, then try again.';
 }
 
 function RecentRecords({ records }: { records: AttendanceRecord[] }) {
