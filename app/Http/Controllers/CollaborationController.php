@@ -58,6 +58,10 @@ class CollaborationController extends Controller
                 ->whereKeyNot($user->id)
                 ->orderBy('name')
                 ->get(['id', 'name', 'email', 'role']),
+            'canAssignTasks' => $this->canAssignTasks($user),
+            'taskAssignableUsers' => $this->assignableTaskUsers($user)
+                ->orderBy('name')
+                ->get(['id', 'name', 'email', 'role']),
         ]);
     }
 
@@ -166,6 +170,8 @@ class CollaborationController extends Controller
 
     public function storeTask(Request $request): RedirectResponse
     {
+        abort_unless($this->canAssignTasks($request->user()), 403);
+
         $attributes = $request->validate([
             'assigned_to' => ['required', 'integer', Rule::exists('users', 'id')],
             'chat_thread_id' => ['nullable', 'integer', Rule::exists('chat_threads', 'id')],
@@ -180,6 +186,8 @@ class CollaborationController extends Controller
             $thread = ChatThread::findOrFail($attributes['chat_thread_id']);
             $this->authorizeParticipant($request, $thread);
         }
+
+        abort_unless($this->assignableTaskUsers($request->user())->whereKey($attributes['assigned_to'])->exists(), 403);
 
         $task = WorkTask::create([
             'assigned_to' => $attributes['assigned_to'],
@@ -260,6 +268,26 @@ class CollaborationController extends Controller
     private function authorizeParticipant(Request $request, ChatThread $thread): void
     {
         abort_unless($thread->participants()->whereKey($request->user()->id)->exists(), 403);
+    }
+
+    private function canAssignTasks(User $user): bool
+    {
+        return $user->hasRole('admin', 'hr', 'manager');
+    }
+
+    private function assignableTaskUsers(User $user)
+    {
+        $query = User::query()->whereKeyNot($user->id);
+
+        if ($user->hasRole('admin', 'hr')) {
+            return $query;
+        }
+
+        if ($user->hasRole('manager') && $user->employee) {
+            return $query->whereHas('employee', fn ($employee) => $employee->where('manager_id', $user->employee->id));
+        }
+
+        return $query->whereRaw('1 = 0');
     }
 
     private function threadRow(ChatThread $thread): array

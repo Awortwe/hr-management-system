@@ -10,9 +10,11 @@ type Props = {
     selectedThread: ChatThreadDetail | null;
     tasks: WorkTask[];
     users: User[];
+    canAssignTasks: boolean;
+    taskAssignableUsers: User[];
 };
 
-export default function Index({ selectedThread, tasks, threads, users }: Props) {
+export default function Index({ canAssignTasks, selectedThread, taskAssignableUsers, tasks, threads, users }: Props) {
     const { auth } = usePage<PageProps>().props;
     const [selectedTaskForUpload, setSelectedTaskForUpload] = useState<number | null>(null);
     const threadForm = useForm<{ subject: string; participant_ids: number[]; message: string }>({
@@ -168,13 +170,19 @@ export default function Index({ selectedThread, tasks, threads, users }: Props) 
                                 Task name
                                 <input className="form-input mt-1 w-full" placeholder="What needs to be done?" value={taskForm.data.title} onChange={(event) => taskForm.setData('title', event.target.value)} />
                             </label>
-                            <label className="block text-sm font-semibold text-zinc-700">
-                                Assignee
-                                <select className="form-input mt-1 w-full" value={taskForm.data.assigned_to} onChange={(event) => taskForm.setData('assigned_to', event.target.value)}>
-                                    <option value="">Choose employee...</option>
-                                    {users.map((user) => <option key={user.id} value={user.id}>{user.name} · {user.role}</option>)}
-                                </select>
-                            </label>
+                            {canAssignTasks ? (
+                                <label className="block text-sm font-semibold text-zinc-700">
+                                    Assignee
+                                    <select className="form-input mt-1 w-full" value={taskForm.data.assigned_to} onChange={(event) => taskForm.setData('assigned_to', event.target.value)}>
+                                        <option value="">Choose employee...</option>
+                                        {taskAssignableUsers.map((user) => <option key={user.id} value={user.id}>{user.name} · {user.role}</option>)}
+                                    </select>
+                                </label>
+                            ) : (
+                                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                                    Task assignment is available to admin, HR, and managers only.
+                                </div>
+                            )}
                             <label className="block text-sm font-semibold text-zinc-700">
                                 Deadline
                                 <input className="form-input mt-1 w-full" type="date" value={taskForm.data.due_date} onChange={(event) => taskForm.setData('due_date', event.target.value)} />
@@ -185,7 +193,7 @@ export default function Index({ selectedThread, tasks, threads, users }: Props) 
                                 {taskForm.data.documents.length ? `${taskForm.data.documents.length} document(s) selected` : 'Attach task documents'}
                                 <input className="hidden" type="file" multiple onChange={(event) => taskForm.setData('documents', Array.from(event.target.files ?? []))} />
                             </label>
-                            <button className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40" disabled={taskForm.processing} type="button" onClick={() => taskForm.post('/collaboration/tasks', { forceFormData: true, preserveScroll: true, onSuccess: () => taskForm.reset() })}>
+                            <button className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40" disabled={! canAssignTasks || taskForm.processing} type="button" onClick={() => taskForm.post('/collaboration/tasks', { forceFormData: true, preserveScroll: true, onSuccess: () => taskForm.reset() })}>
                                 Assign Task
                             </button>
                         </div>
