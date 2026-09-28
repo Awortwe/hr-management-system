@@ -1,12 +1,14 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CollaborationController;
 use App\Http\Controllers\CompanySettingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LeaveTypeController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\SelfServiceAttendanceController;
@@ -22,6 +24,17 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
     Route::get('/', DashboardController::class)->name('dashboard');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+
+    Route::get('/collaboration', [CollaborationController::class, 'index'])->name('collaboration.index');
+    Route::post('/collaboration/threads', [CollaborationController::class, 'storeThread'])->name('collaboration.threads.store');
+    Route::post('/collaboration/threads/{thread}/messages', [CollaborationController::class, 'storeMessage'])->name('collaboration.messages.store');
+    Route::post('/collaboration/threads/{thread}/documents', [CollaborationController::class, 'storeDocument'])->name('collaboration.documents.store');
+    Route::post('/collaboration/tasks', [CollaborationController::class, 'storeTask'])->name('collaboration.tasks.store');
+    Route::patch('/collaboration/tasks/{task}', [CollaborationController::class, 'updateTask'])->name('collaboration.tasks.update');
 
     Route::middleware('role:employee,manager,hr,admin')->group(function (): void {
         Route::get('/staff/leave-requests', [LeaveRequestController::class, 'index'])->name('staff.leave-requests.index');

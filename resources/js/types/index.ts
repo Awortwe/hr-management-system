@@ -246,6 +246,10 @@ export type PageProps = {
     auth: {
         user: User | null;
     };
+    notifications: {
+        unread_count: number;
+        recent: Array<Pick<AppNotification, 'id' | 'title' | 'body' | 'url' | 'created_at'>>;
+    };
     flash: {
         success?: string | null;
         error?: string | null;
@@ -260,4 +264,65 @@ export type CompanySettings = {
     website: string | null;
     address: string | null;
     registration_number: string | null;
+};
+
+export type AppNotification = {
+    id: number;
+    type: string;
+    title: string;
+    body: string | null;
+    url: string | null;
+    data?: Record<string, unknown> | null;
+    read_at: string | null;
+    created_at: string | null;
+    actor?: User | null;
+};
+
+export type ChatThread = {
+    id: number;
+    subject: string;
+    created_at: string | null;
+    updated_at: string | null;
+    participants: User[];
+    latest_message?: {
+        body: string;
+        created_at: string | null;
+    } | null;
+};
+
+export type ChatMessage = {
+    id: number;
+    body: string;
+    created_at: string | null;
+    user: User;
+};
+
+export type SharedDocument = {
+    id: number;
+    original_name: string;
+    mime_type: string | null;
+    size: number;
+    url: string;
+    created_at: string | null;
+    uploader: User;
+};
+
+export type WorkTask = {
+    id: number;
+    title: string;
+    description: string | null;
+    status: string;
+    due_date: string | null;
+    completed_at: string | null;
+    created_at: string | null;
+    thread_id?: number | null;
+    thread_subject?: string | null;
+    assigner: User;
+    assignee: User;
+};
+
+export type ChatThreadDetail = ChatThread & {
+    messages: ChatMessage[];
+    documents: SharedDocument[];
+    tasks: WorkTask[];
 };

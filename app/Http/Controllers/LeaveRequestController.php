@@ -8,6 +8,7 @@ use App\Models\LeaveRequest;
 use App\Models\LeaveType;
 use App\Models\User;
 use App\Support\EmployeeSearch;
+use App\Support\AppNotifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -94,7 +95,31 @@ class LeaveRequestController extends Controller
         $attributes['requested_days'] = $this->calculateRequestedDays($attributes['start_date'], $attributes['end_date']);
         $attributes['status'] = 'pending';
 
-        LeaveRequest::create($attributes);
+        $leaveRequest = LeaveRequest::query()->with(['employee.user', 'employee.manager.user', 'leaveType'])->find(
+            LeaveRequest::create($attributes)->id,
+        );
+
+        AppNotifier::notifyRoles(
+            ['admin', 'hr'],
+            'leave.requested',
+            'Leave request submitted',
+            "{$leaveRequest->employee?->full_name} requested {$leaveRequest->requested_days} day(s) of {$leaveRequest->leaveType?->name}.",
+            '/staff/leave-requests?status=pending',
+            $request->user(),
+            ['leave_request_id' => $leaveRequest->id],
+        );
+
+        if ($leaveRequest->employee?->manager?->user) {
+            AppNotifier::notify(
+                $leaveRequest->employee->manager->user,
+                'leave.requested',
+                'Team leave request submitted',
+                "{$leaveRequest->employee->full_name} submitted a leave request for your review.",
+                '/staff/leave-requests?status=pending',
+                $request->user(),
+                ['leave_request_id' => $leaveRequest->id],
+            );
+        }
 
         return back()->with('success', 'Leave request submitted.');
     }
@@ -146,6 +171,18 @@ class LeaveRequestController extends Controller
                     ],
                 )
                 ->increment('used_days', $requestedDays);
+
+            if ($lockedRequest->employee?->user) {
+                AppNotifier::notify(
+                    $lockedRequest->employee->user,
+                    'leave.approved',
+                    'Leave request approved',
+                    "Your leave request from {$lockedRequest->start_date->toFormattedDateString()} was approved.",
+                    '/staff/leave-requests',
+                    $request->user(),
+                    ['leave_request_id' => $lockedRequest->id],
+                );
+            }
         });
 
         return back()->with('success', 'Leave request approved and balance updated.');
@@ -182,6 +219,18 @@ class LeaveRequestController extends Controller
                 'decision_comment' => $attributes['decision_comment'],
                 'decided_at' => now(),
             ]);
+
+            if ($lockedRequest->employee?->user) {
+                AppNotifier::notify(
+                    $lockedRequest->employee->user,
+                    'leave.rejected',
+                    'Leave request rejected',
+                    "Your leave request from {$lockedRequest->start_date->toFormattedDateString()} was rejected.",
+                    '/staff/leave-requests',
+                    $request->user(),
+                    ['leave_request_id' => $lockedRequest->id],
+                );
+            }
         });
 
         return back()->with('success', 'Leave request rejected.');

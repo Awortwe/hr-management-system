@@ -1,7 +1,8 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import Head from '../Components/PageHead';
 import type { ReactNode } from 'react';
 import AppLayout from '../Layouts/AppLayout';
+import type { PageProps } from '../types';
 
 type Kpi = {
     label: string;
@@ -46,6 +47,8 @@ type Props = {
 };
 
 export default function Dashboard({ departments, kpis, pendingRequests, recentHires, statusTotals }: Props) {
+    const { notifications } = usePage<PageProps>().props;
+
     return (
         <AppLayout>
             <Head title="Dashboard" />
@@ -102,6 +105,33 @@ export default function Dashboard({ departments, kpis, pendingRequests, recentHi
                             ))}
                         </div>
                     </div>
+                </section>
+
+                <section className="grid gap-5 xl:grid-cols-2">
+                    <Widget title="Dashboard Notifications" href="/notifications" linkLabel="Open Notifications">
+                        <div className="space-y-3">
+                            {notifications.recent.map((notification) => (
+                                <Link className="block rounded-lg border border-zinc-200 p-3 hover:bg-zinc-50" href={notification.url ?? '/notifications'} key={notification.id}>
+                                    <p className="font-medium">{notification.title}</p>
+                                    {notification.body && <p className="mt-1 text-sm text-zinc-600">{notification.body}</p>}
+                                </Link>
+                            ))}
+                            {notifications.recent.length === 0 && <EmptyState message="No unread notifications." />}
+                        </div>
+                    </Widget>
+
+                    <Widget title="Collaboration" href="/collaboration" linkLabel="Open Workspace">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="rounded-lg border border-zinc-200 p-3">
+                                <p className="font-medium">Chat</p>
+                                <p className="mt-1 text-sm text-zinc-600">Message employees and managers.</p>
+                            </div>
+                            <div className="rounded-lg border border-zinc-200 p-3">
+                                <p className="font-medium">Tasks and Documents</p>
+                                <p className="mt-1 text-sm text-zinc-600">Assign work and share files.</p>
+                            </div>
+                        </div>
+                    </Widget>
                 </section>
 
                 <section className="grid gap-5 xl:grid-cols-2">

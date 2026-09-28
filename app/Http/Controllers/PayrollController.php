@@ -8,6 +8,7 @@ use App\Models\Payroll;
 use App\Models\PayrollItem;
 use App\Support\CsvExporter;
 use App\Support\EmployeeSearch;
+use App\Support\AppNotifier;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -84,7 +85,7 @@ class PayrollController extends Controller
                 ->where('status', 'active')
                 ->orderBy('first_name')
                 ->get()
-                ->each(function (Employee $employee) use ($payroll, &$created, &$skipped): void {
+                ->each(function (Employee $employee) use ($payroll, &$created, &$skipped, $request): void {
                     $basicSalary = (float) $employee->basic_salary;
                     $allowances = round($basicSalary * 0.12, 2);
                     $grossPay = round($basicSalary + $allowances, 2);
@@ -119,6 +120,17 @@ class PayrollController extends Controller
 
                     if ($item->wasRecentlyCreated) {
                         $created++;
+                        if ($employee->user) {
+                            AppNotifier::notify(
+                                $employee->user,
+                                'payroll.generated',
+                                'Salary payslip generated',
+                                "Your {$payroll->month}/{$payroll->year} salary payslip is ready.",
+                                '/staff/payroll',
+                                $request->user(),
+                                ['payroll_id' => $payroll->id, 'payroll_item_id' => $item->id],
+                            );
+                        }
 
                         return;
                     }
@@ -138,6 +150,16 @@ class PayrollController extends Controller
                 'finalized_by' => $request->user()->id,
                 'finalized_at' => now(),
             ]);
+
+            AppNotifier::notifyRoles(
+                ['admin', 'hr'],
+                'payroll.run',
+                'Payroll run completed',
+                "{$created} payslips generated and {$skipped} existing payslips skipped.",
+                '/staff/payroll',
+                $request->user(),
+                ['payroll_id' => $payroll->id],
+            );
         });
 
         return back()->with('success', "Payroll run complete. {$created} payslips generated, {$skipped} already paid.");

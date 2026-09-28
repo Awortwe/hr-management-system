@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AttendanceRecord;
 use App\Models\Employee;
+use App\Support\AppNotifier;
 use App\Support\EmployeeSearch;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -111,7 +112,7 @@ class SelfServiceAttendanceController extends Controller
             return back()->with('error', 'We could not find an employee profile linked to your login yet.');
         }
 
-        return DB::transaction(function () use ($employee): RedirectResponse {
+        return DB::transaction(function () use ($employee, $request): RedirectResponse {
             Employee::query()->whereKey($employee->id)->lockForUpdate()->firstOrFail();
             $attendance = $this->todayRecord($employee);
 
@@ -127,6 +128,18 @@ class SelfServiceAttendanceController extends Controller
                 'worked_minutes' => 0,
             ])->save();
 
+            if ($employee->manager?->user) {
+                AppNotifier::notify(
+                    $employee->manager->user,
+                    'attendance.clock_in',
+                    'Team member clocked in',
+                    "{$employee->full_name} clocked in for today.",
+                    '/manager/attendance',
+                    $request->user(),
+                    ['attendance_record_id' => $attendance->id],
+                );
+            }
+
             return back()->with('success', 'You are clocked in. Have a good shift.');
         });
     }
@@ -139,7 +152,7 @@ class SelfServiceAttendanceController extends Controller
             return back()->with('error', 'We could not find an employee profile linked to your login yet.');
         }
 
-        return DB::transaction(function () use ($employee): RedirectResponse {
+        return DB::transaction(function () use ($employee, $request): RedirectResponse {
             Employee::query()->whereKey($employee->id)->lockForUpdate()->firstOrFail();
             $attendance = $this->todayRecord($employee);
 
@@ -157,6 +170,18 @@ class SelfServiceAttendanceController extends Controller
                 'clock_out_at' => $clockOut,
                 'worked_minutes' => (int) $attendance->clock_in_at->diffInMinutes($clockOut),
             ])->save();
+
+            if ($employee->manager?->user) {
+                AppNotifier::notify(
+                    $employee->manager->user,
+                    'attendance.clock_out',
+                    'Team member clocked out',
+                    "{$employee->full_name} clocked out for today.",
+                    '/manager/attendance',
+                    $request->user(),
+                    ['attendance_record_id' => $attendance->id],
+                );
+            }
 
             return back()->with('success', 'You are clocked out. Nice work today.');
         });

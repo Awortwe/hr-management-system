@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Menu, X, LogOut } from 'lucide-react';
+import { Bell, LogOut, Menu, MessageSquare, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import type { PageProps, Role } from '../types';
@@ -12,6 +12,8 @@ type NavItem = {
 
 const navItems: NavItem[] = [
     { label: 'Dashboard', href: '/', roles: ['admin', 'hr', 'manager', 'employee'] },
+    { label: 'Notifications', href: '/notifications', roles: ['admin', 'hr', 'manager', 'employee'] },
+    { label: 'Chat, Tasks & Docs', href: '/collaboration', roles: ['admin', 'hr', 'manager', 'employee'] },
     { label: 'Departments', href: '/organization/departments', roles: ['admin', 'hr'] },
     { label: 'Positions', href: '/organization/positions', roles: ['admin', 'hr'] },
     { label: 'Employees', href: '/staff/employees', roles: ['admin', 'hr'] },
@@ -33,6 +35,7 @@ function canSee(roles: Role[], role?: Role) {
 
 export default function AppLayout({ children }: PropsWithChildren) {
     const { auth, flash, company } = usePage<PageProps>().props;
+    const { notifications } = usePage<PageProps>().props;
     const [menuOpen, setMenuOpen] = useState(false);
     const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -90,10 +93,23 @@ export default function AppLayout({ children }: PropsWithChildren) {
                 <header className="border-b border-zinc-200 bg-white px-5 py-4 lg:px-8">
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex min-w-0 items-center gap-3"><button type="button" className="shrink-0 rounded-md p-2 lg:hidden" aria-label={menuOpen ? 'Close navigation' : 'Open navigation'} title={menuOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={20} /> : <Menu size={20} />}</button><p className="min-w-0 break-words text-sm font-semibold text-zinc-700">{company.name}</p></div>
-                        <p className="flex min-w-0 items-center gap-3 break-all text-sm text-zinc-500">
-                            {auth.user ? `${auth.user.email}` : 'Guest session'}
+                        <div className="flex min-w-0 items-center gap-2 text-sm text-zinc-500">
+                            {auth.user && (
+                                <>
+                                    <Link href="/collaboration" className="rounded-md p-2 text-zinc-600 hover:bg-zinc-100" aria-label="Open chat and tasks" title="Chat, tasks and documents"><MessageSquare size={18} /></Link>
+                                    <Link href="/notifications" className="relative rounded-md p-2 text-zinc-600 hover:bg-zinc-100" aria-label="Open notifications" title="Notifications">
+                                        <Bell size={18} />
+                                        {notifications.unread_count > 0 && (
+                                            <span className="absolute -right-1 -top-1 rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                                                {notifications.unread_count > 9 ? '9+' : notifications.unread_count}
+                                            </span>
+                                        )}
+                                    </Link>
+                                </>
+                            )}
+                            <span className="min-w-0 break-all">{auth.user ? `${auth.user.email}` : 'Guest session'}</span>
                             {auth.user && <Link href="/logout" method="post" as="button" className="shrink-0 rounded-md p-2" aria-label="Sign out" title="Sign out"><LogOut size={18} /></Link>}
-                        </p>
+                        </div>
                     </div>
                 </header>
                 {menuOpen && <nav id="mobile-navigation" className="border-b border-zinc-200 bg-white px-5 py-3 lg:hidden">{visibleNav.map(item => <Link className="block rounded-md px-3 py-3 text-sm font-medium hover:bg-zinc-100" href={item.href} key={item.href} onClick={() => setMenuOpen(false)}>{item.label}</Link>)}</nav>}
