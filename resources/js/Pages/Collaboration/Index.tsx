@@ -1,5 +1,6 @@
 import { Link, router, useForm, usePage } from '@inertiajs/react';
-import { CheckCircle2, FileUp, MessageSquarePlus, Send, SquarePen } from 'lucide-react';
+import { CalendarDays, CheckCircle2, FileUp, MessageSquarePlus, Paperclip, Send, SquarePen, UserRound } from 'lucide-react';
+import { useState } from 'react';
 import Head from '../../Components/PageHead';
 import AppLayout from '../../Layouts/AppLayout';
 import type { ChatThread, ChatThreadDetail, PageProps, User, WorkTask } from '../../types';
@@ -13,6 +14,7 @@ type Props = {
 
 export default function Index({ selectedThread, tasks, threads, users }: Props) {
     const { auth } = usePage<PageProps>().props;
+    const [selectedTaskForUpload, setSelectedTaskForUpload] = useState<number | null>(null);
     const threadForm = useForm<{ subject: string; participant_ids: number[]; message: string }>({
         subject: '',
         participant_ids: [],
@@ -25,14 +27,12 @@ export default function Index({ selectedThread, tasks, threads, users }: Props) 
         title: '',
         description: '',
         due_date: '',
+        documents: [] as File[],
     });
     const documentForm = useForm<{ document: File | null }>({ document: null });
+    const taskDocumentForm = useForm<{ documents: File[] }>({ documents: [] });
 
-    function toggleParticipant(userId: number) {
-        threadForm.setData('participant_ids', threadForm.data.participant_ids.includes(userId)
-            ? threadForm.data.participant_ids.filter((id) => id !== userId)
-            : [...threadForm.data.participant_ids, userId]);
-    }
+    const selectedChatEmployee = users.find((user) => user.id === threadForm.data.participant_ids[0]);
 
     return (
         <AppLayout>
@@ -49,29 +49,30 @@ export default function Index({ selectedThread, tasks, threads, users }: Props) 
                         <section className="rounded-lg border border-zinc-200 bg-white p-4">
                             <div className="flex items-center gap-2">
                                 <MessageSquarePlus size={18} />
-                                <h2 className="font-semibold">Start Chat</h2>
+                                <h2 className="font-semibold">Send Message</h2>
                             </div>
                             <div className="mt-4 space-y-3">
-                                <input className="form-input w-full" placeholder="Subject" value={threadForm.data.subject} onChange={(event) => threadForm.setData('subject', event.target.value)} />
-                                <textarea className="form-input min-h-24 w-full" placeholder="First message" value={threadForm.data.message} onChange={(event) => threadForm.setData('message', event.target.value)} />
-                                <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border border-zinc-200 p-2">
-                                    {users.map((user) => (
-                                        <label className="flex items-start gap-2 rounded-md px-2 py-1 text-sm hover:bg-zinc-50" key={user.id}>
-                                            <input type="checkbox" checked={threadForm.data.participant_ids.includes(user.id)} onChange={() => toggleParticipant(user.id)} />
-                                            <span>
-                                                <span className="font-medium">{user.name}</span>
-                                                <span className="block text-xs text-zinc-500">{user.role} · {user.email}</span>
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
+                                <label className="block text-sm font-semibold text-zinc-700">
+                                    Employee
+                                    <select className="form-input mt-1 w-full" value={threadForm.data.participant_ids[0] ?? ''} onChange={(event) => threadForm.setData('participant_ids', event.target.value ? [Number(event.target.value)] : [])}>
+                                        <option value="">Choose employee...</option>
+                                        {users.map((user) => <option key={user.id} value={user.id}>{user.name} · {user.role}</option>)}
+                                    </select>
+                                </label>
+                                <input className="form-input w-full" placeholder={selectedChatEmployee ? `Message with ${selectedChatEmployee.name}` : 'Subject'} value={threadForm.data.subject} onChange={(event) => threadForm.setData('subject', event.target.value)} />
+                                <textarea className="form-input min-h-28 w-full" placeholder="Write the message you want to send" value={threadForm.data.message} onChange={(event) => threadForm.setData('message', event.target.value)} />
                                 <button
                                     className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
                                     disabled={threadForm.processing}
-                                    onClick={() => threadForm.post('/collaboration/threads', { preserveScroll: true, onSuccess: () => threadForm.reset() })}
+                                    onClick={() => {
+                                        if (! threadForm.data.subject && selectedChatEmployee) {
+                                            threadForm.setData('subject', `Message with ${selectedChatEmployee.name}`);
+                                        }
+                                        threadForm.post('/collaboration/threads', { preserveScroll: true, onSuccess: () => threadForm.reset() });
+                                    }}
                                     type="button"
                                 >
-                                    Create Thread
+                                    Send Message
                                 </button>
                             </div>
                         </section>
@@ -163,14 +164,28 @@ export default function Index({ selectedThread, tasks, threads, users }: Props) 
                             <h2 className="font-semibold">Assign Task</h2>
                         </div>
                         <div className="mt-4 space-y-3">
-                            <input className="form-input w-full" placeholder="Task title" value={taskForm.data.title} onChange={(event) => taskForm.setData('title', event.target.value)} />
-                            <select className="form-input w-full" value={taskForm.data.assigned_to} onChange={(event) => taskForm.setData('assigned_to', event.target.value)}>
-                                <option value="">Assign to...</option>
-                                {users.map((user) => <option key={user.id} value={user.id}>{user.name} · {user.role}</option>)}
-                            </select>
-                            <input className="form-input w-full" type="date" value={taskForm.data.due_date} onChange={(event) => taskForm.setData('due_date', event.target.value)} />
+                            <label className="block text-sm font-semibold text-zinc-700">
+                                Task name
+                                <input className="form-input mt-1 w-full" placeholder="What needs to be done?" value={taskForm.data.title} onChange={(event) => taskForm.setData('title', event.target.value)} />
+                            </label>
+                            <label className="block text-sm font-semibold text-zinc-700">
+                                Assignee
+                                <select className="form-input mt-1 w-full" value={taskForm.data.assigned_to} onChange={(event) => taskForm.setData('assigned_to', event.target.value)}>
+                                    <option value="">Choose employee...</option>
+                                    {users.map((user) => <option key={user.id} value={user.id}>{user.name} · {user.role}</option>)}
+                                </select>
+                            </label>
+                            <label className="block text-sm font-semibold text-zinc-700">
+                                Deadline
+                                <input className="form-input mt-1 w-full" type="date" value={taskForm.data.due_date} onChange={(event) => taskForm.setData('due_date', event.target.value)} />
+                            </label>
                             <textarea className="form-input min-h-24 w-full" placeholder="Description" value={taskForm.data.description} onChange={(event) => taskForm.setData('description', event.target.value)} />
-                            <button className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40" disabled={taskForm.processing} type="button" onClick={() => taskForm.post('/collaboration/tasks', { preserveScroll: true, onSuccess: () => taskForm.reset() })}>
+                            <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-zinc-300 px-3 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
+                                <Paperclip size={16} />
+                                {taskForm.data.documents.length ? `${taskForm.data.documents.length} document(s) selected` : 'Attach task documents'}
+                                <input className="hidden" type="file" multiple onChange={(event) => taskForm.setData('documents', Array.from(event.target.files ?? []))} />
+                            </label>
+                            <button className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40" disabled={taskForm.processing} type="button" onClick={() => taskForm.post('/collaboration/tasks', { forceFormData: true, preserveScroll: true, onSuccess: () => taskForm.reset() })}>
                                 Assign Task
                             </button>
                         </div>
@@ -180,18 +195,42 @@ export default function Index({ selectedThread, tasks, threads, users }: Props) 
                         <h2 className="font-semibold">Tasks</h2>
                         <div className="mt-4 divide-y divide-zinc-100">
                             {tasks.map((task) => (
-                                <div className="py-3" key={task.id}>
+                                <div className="py-4" key={task.id}>
                                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                         <div>
-                                            <p className="font-medium">{task.title}</p>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <p className="font-medium">{task.title}</p>
+                                                <span className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-semibold text-zinc-700">{titleCase(task.status)}</span>
+                                            </div>
                                             <p className="mt-1 text-sm text-zinc-600">{task.description || 'No description'}</p>
-                                            <p className="mt-2 text-xs text-zinc-500">
-                                                {task.assigner.name} → {task.assignee.name} · Due {formatDate(task.due_date)}
-                                                {task.thread_subject ? ` · ${task.thread_subject}` : ''}
-                                            </p>
+                                            <div className="mt-3 flex flex-wrap gap-2 text-xs text-zinc-600">
+                                                <span className="inline-flex items-center gap-1 rounded-md border border-zinc-200 px-2 py-1"><UserRound size={13} /> {task.assigner.name} → {task.assignee.name}</span>
+                                                <span className="inline-flex items-center gap-1 rounded-md border border-zinc-200 px-2 py-1"><CalendarDays size={13} /> Due {formatDate(task.due_date)}</span>
+                                                {task.thread_subject && <span className="rounded-md border border-zinc-200 px-2 py-1">{task.thread_subject}</span>}
+                                            </div>
+                                            {task.documents && task.documents.length > 0 && (
+                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                    {task.documents.map((document) => (
+                                                        <a className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100" href={document.url} key={document.id} target="_blank">
+                                                            <Paperclip size={13} /> {document.original_name}
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="flex shrink-0 items-center gap-2">
-                                            <span className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-semibold text-zinc-700">{titleCase(task.status)}</span>
+                                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                                            <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-zinc-300 px-3 py-2 text-sm font-semibold hover:bg-zinc-50">
+                                                <FileUp size={16} /> Add files
+                                                <input className="hidden" type="file" multiple onChange={(event) => {
+                                                    setSelectedTaskForUpload(task.id);
+                                                    taskDocumentForm.setData('documents', Array.from(event.target.files ?? []));
+                                                }} />
+                                            </label>
+                                            {selectedTaskForUpload === task.id && taskDocumentForm.data.documents.length > 0 && (
+                                                <button className="rounded-md bg-blue-700 px-3 py-2 text-sm font-semibold text-white" type="button" onClick={() => taskDocumentForm.post(`/collaboration/tasks/${task.id}/documents`, { forceFormData: true, preserveScroll: true, onSuccess: () => { taskDocumentForm.reset(); setSelectedTaskForUpload(null); } })}>
+                                                    Upload {taskDocumentForm.data.documents.length}
+                                                </button>
+                                            )}
                                             {task.status !== 'done' && (
                                                 <button className="inline-flex items-center gap-1 rounded-md bg-emerald-700 px-3 py-2 text-sm font-semibold text-white" type="button" onClick={() => router.patch(`/collaboration/tasks/${task.id}`, { status: 'done' }, { preserveScroll: true })}>
                                                     <CheckCircle2 size={16} /> Done

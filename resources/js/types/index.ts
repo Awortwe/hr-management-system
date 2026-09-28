@@ -319,6 +319,7 @@ export type WorkTask = {
     thread_subject?: string | null;
     assigner: User;
     assignee: User;
+    documents?: SharedDocument[];
 };
 
 export type ChatThreadDetail = ChatThread & {

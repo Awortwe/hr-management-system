@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'assigned_by',
@@ -42,5 +43,10 @@ class WorkTask extends Model
     public function thread(): BelongsTo
     {
         return $this->belongsTo(ChatThread::class, 'chat_thread_id');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(SharedDocument::class);
     }
 }

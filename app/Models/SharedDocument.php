@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 #[Fillable([
     'uploaded_by',
     'chat_thread_id',
+    'work_task_id',
     'disk',
     'path',
     'original_name',
@@ -35,5 +36,10 @@ class SharedDocument extends Model
     public function thread(): BelongsTo
     {
         return $this->belongsTo(ChatThread::class, 'chat_thread_id');
+    }
+
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(WorkTask::class, 'work_task_id');
     }
 }

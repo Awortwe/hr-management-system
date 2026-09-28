@@ -36,6 +36,7 @@ class CollaborationController extends Controller
                 'documents.uploader:id,name,email,role',
                 'tasks.assigner:id,name,email,role',
                 'tasks.assignee:id,name,email,role',
+                'tasks.documents.uploader:id,name,email,role',
             ]);
 
             $selectedThread->participants()->updateExistingPivot($user->id, ['last_read_at' => now()]);
@@ -45,7 +46,7 @@ class CollaborationController extends Controller
             'threads' => $threads->map(fn (ChatThread $thread): array => $this->threadRow($thread)),
             'selectedThread' => $selectedThread ? $this->threadDetail($selectedThread) : null,
             'tasks' => WorkTask::query()
-                ->with(['assigner:id,name,email,role', 'assignee:id,name,email,role', 'thread:id,subject'])
+                ->with(['assigner:id,name,email,role', 'assignee:id,name,email,role', 'thread:id,subject', 'documents.uploader:id,name,email,role'])
                 ->where(fn ($query) => $query
                     ->where('assigned_to', $user->id)
                     ->orWhere('assigned_by', $user->id))
@@ -63,15 +64,16 @@ class CollaborationController extends Controller
     public function storeThread(Request $request): RedirectResponse
     {
         $attributes = $request->validate([
-            'subject' => ['required', 'string', 'max:120'],
+            'subject' => ['nullable', 'string', 'max:120'],
             'participant_ids' => ['required', 'array', 'min:1'],
             'participant_ids.*' => ['integer', Rule::exists('users', 'id')],
             'message' => ['required', 'string', 'max:5000'],
         ]);
 
         $thread = DB::transaction(function () use ($attributes, $request): ChatThread {
+            $recipient = User::query()->whereKey($attributes['participant_ids'][0] ?? null)->first();
             $thread = ChatThread::create([
-                'subject' => $attributes['subject'],
+                'subject' => $attributes['subject'] ?: 'Message with '.($recipient?->name ?? 'employee'),
                 'created_by' => $request->user()->id,
             ]);
             $participantIds = collect($attributes['participant_ids'])
@@ -170,6 +172,8 @@ class CollaborationController extends Controller
             'title' => ['required', 'string', 'max:160'],
             'description' => ['nullable', 'string', 'max:5000'],
             'due_date' => ['nullable', 'date'],
+            'documents' => ['nullable', 'array'],
+            'documents.*' => ['file', 'max:10240'],
         ]);
 
         if (! empty($attributes['chat_thread_id'])) {
@@ -178,22 +182,51 @@ class CollaborationController extends Controller
         }
 
         $task = WorkTask::create([
-            ...$attributes,
+            'assigned_to' => $attributes['assigned_to'],
+            'chat_thread_id' => $attributes['chat_thread_id'] ?? null,
+            'title' => $attributes['title'],
+            'description' => $attributes['description'] ?? null,
+            'due_date' => $attributes['due_date'] ?? null,
             'assigned_by' => $request->user()->id,
             'status' => 'open',
         ]);
+        $uploadedCount = $this->storeTaskDocuments($request, $task);
 
         AppNotifier::notify(
             User::findOrFail($attributes['assigned_to']),
             'task.assigned',
             'New task assigned',
-            "{$request->user()->name} assigned you: {$task->title}",
+            "{$request->user()->name} assigned you: {$task->title}".($uploadedCount ? " with {$uploadedCount} document(s)." : '.'),
             $task->chat_thread_id ? "/collaboration?thread={$task->chat_thread_id}" : '/collaboration',
             $request->user(),
             ['task_id' => $task->id],
         );
 
         return back()->with('success', 'Task assigned.');
+    }
+
+    public function storeTaskDocument(Request $request, WorkTask $task): RedirectResponse
+    {
+        abort_unless(in_array($request->user()->id, [$task->assigned_to, $task->assigned_by], true), 403);
+
+        $request->validate([
+            'documents' => ['required', 'array', 'min:1'],
+            'documents.*' => ['file', 'max:10240'],
+        ]);
+
+        $uploadedCount = $this->storeTaskDocuments($request, $task);
+
+        AppNotifier::notify(
+            $task->assignee,
+            'task.document_added',
+            'Task document added',
+            "{$request->user()->name} added {$uploadedCount} document(s) to {$task->title}.",
+            $task->chat_thread_id ? "/collaboration?thread={$task->chat_thread_id}" : '/collaboration',
+            $request->user(),
+            ['task_id' => $task->id],
+        );
+
+        return back()->with('success', 'Task document uploaded.');
     }
 
     public function updateTask(Request $request, WorkTask $task): RedirectResponse
@@ -283,7 +316,38 @@ class CollaborationController extends Controller
             'thread_subject' => $task->thread?->subject,
             'assigner' => $this->userRow($task->assigner),
             'assignee' => $this->userRow($task->assignee),
+            'documents' => $task->documents->map(fn (SharedDocument $document): array => [
+                'id' => $document->id,
+                'original_name' => $document->original_name,
+                'mime_type' => $document->mime_type,
+                'size' => $document->size,
+                'url' => $document->url,
+                'created_at' => $document->created_at?->toISOString(),
+                'uploader' => $this->userRow($document->uploader),
+            ]),
         ];
+    }
+
+    private function storeTaskDocuments(Request $request, WorkTask $task): int
+    {
+        $files = $request->file('documents', []);
+
+        foreach ($files as $file) {
+            $path = $file->store('task-documents', 'public');
+
+            SharedDocument::create([
+                'uploaded_by' => $request->user()->id,
+                'chat_thread_id' => $task->chat_thread_id,
+                'work_task_id' => $task->id,
+                'disk' => 'public',
+                'path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getClientMimeType(),
+                'size' => $file->getSize() ?: 0,
+            ]);
+        }
+
+        return count($files);
     }
 
     private function userRow(User $user): array

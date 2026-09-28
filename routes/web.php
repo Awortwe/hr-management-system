@@ -34,6 +34,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/collaboration/threads/{thread}/messages', [CollaborationController::class, 'storeMessage'])->name('collaboration.messages.store');
     Route::post('/collaboration/threads/{thread}/documents', [CollaborationController::class, 'storeDocument'])->name('collaboration.documents.store');
     Route::post('/collaboration/tasks', [CollaborationController::class, 'storeTask'])->name('collaboration.tasks.store');
+    Route::post('/collaboration/tasks/{task}/documents', [CollaborationController::class, 'storeTaskDocument'])->name('collaboration.tasks.documents.store');
     Route::patch('/collaboration/tasks/{task}', [CollaborationController::class, 'updateTask'])->name('collaboration.tasks.update');
 
     Route::middleware('role:employee,manager,hr,admin')->group(function (): void {
